@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -12,4 +6,96 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Professional {
+  id               String              @id @default(uuid())
+  fullName         String
+  email            String              @unique
+  phoneNumber      String
+  isAvailable      Boolean             @default(false) // ← disponibilidade atual geral (Que deterina se pode ser contratada)
+  availabilityType GeneralAvailability // ← enum
+  experienceLevel  ExperienceLevel // ← enum
+  specialties      Specialty[]         @relation("ProfessionalSpecialties")
+  availability     Availability[]
+  location         Location            @relation(fields: [locationId], references: [id])
+  locationId       String
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+}
+
+model Specialty {
+  id            String         @id @default(uuid())
+  name          String
+  professionals Professional[] @relation("ProfessionalSpecialties")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Availability {
+  id             String       @id @default(uuid())
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  professionalId String
+  weekday        Weekday // ← agora usa enum
+  startTime      String // e.g., "08:00"
+  endTime        String // e.g., "17:00"
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Location {
+  id             String          @id @default(uuid())
+  city           City            @relation(fields: [cityId], references: [id])
+  cityId         String
+  district       District        @relation(fields: [districtId], references: [id])
+  districtId     String
+  street         String?
+  professionals  Professional[]  // One location → many professionals
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model City {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  districts District[]
+  locations Location[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model District {
+  id        String     @id @default(uuid())
+  name      String
+  city      City       @relation(fields: [cityId], references: [id])
+  cityId    String
+  locations Location[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  @@unique([name, cityId]) // evita duplicação de bairro por cidade
+}
+
+ enum GeneralAvailability {
+  FULL_TIME
+  PART_TIME
+  DAILY
+  WEEKENDS
+  ANY
+}
+
+enum ExperienceLevel {
+  LESS_THAN_1
+  ONE_TO_THREE
+  THREE_TO_FIVE
+  MORE_THAN_FIVE
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
 }
