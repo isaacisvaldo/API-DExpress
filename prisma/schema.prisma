@@ -1,12 +1,44 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+enum JobApplicationStatus {
+  PENDING        // Aguardando avaliação
+  ACCEPTED       // Candidato aprovado
+  REJECTED       // Candidato rejeitado
+  IN_REVIEW      // Em análise
+  INTERVIEW      // Agendado para entrevista
+}
+model JobApplication {
+  id                      String   @id @default(uuid())
+  locationId       String
+  fullName                String
+  identityNumber          String   // Nº BI
+  phoneNumber             String
+  optionalPhoneNumber     String?
+  email                   String
+  address                 String
+  birthDate               DateTime
+  maritalStatus           String   // Estado Civil
+  hasChildren             Boolean
+  knownDiseases           String?  // Doenças
+  desiredPosition         String   // Cargo
+  languages               String[] // Idiomas
+  availabilityDate        DateTime // Data de disponibilidade para início
+  professionalExperience  String   // Experiência Profissional
+  highestDegree           String   // Grau mais elevado concluído
+  courses                 String[] // Cursos
+  skillsAndQualities      String []  // Habilidades e Qualidades
+  status                  JobApplicationStatus @default(PENDING)
+   location         Location            @relation(fields: [locationId], references: [id])
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
 
 model Professional {
   id               String              @id @default(uuid())
@@ -26,11 +58,12 @@ model Professional {
 
 model Specialty {
   id            String         @id @default(uuid())
-  name          String
+  name          String         @unique
   professionals Professional[] @relation("ProfessionalSpecialties")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
+
 
 model Availability {
   id             String       @id @default(uuid())
@@ -51,6 +84,7 @@ model Location {
   districtId     String
   street         String?
   professionals  Professional[]  // One location → many professionals
+  jobApplication  JobApplication[]  // One location → many jobApplication
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 }
@@ -72,7 +106,7 @@ model District {
   locations Location[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  @@unique([name, cityId]) // evita duplicação de bairro por cidade
+  @@unique([name, cityId]) 
 }
 
  enum GeneralAvailability {

@@ -1,4 +1,4 @@
-export const specialties = [
+export const specialtyNames = [
     'Limpeza',
     'Culinária',
     'Cuidados Especiais',
