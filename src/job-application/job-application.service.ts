@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateJobApplicationDto } from './dto/create-job-application.dto';
 import { UpdateJobApplicationDto } from './dto/update-job-application.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { JobApplicationStatus } from './types/types';
+import { UpdateJobApplicationStatusDto } from './dto/update-status.dto';
 
 @Injectable()
 export class JobApplicationService {
@@ -93,4 +95,10 @@ export class JobApplicationService {
       where: { id },
     });
   }
+async updateStatus(id: string, dto: UpdateJobApplicationStatusDto) {
+  return this.prisma.jobApplication.update({
+    where: { id },
+    data: { status: dto.status },
+  });
+}
 }

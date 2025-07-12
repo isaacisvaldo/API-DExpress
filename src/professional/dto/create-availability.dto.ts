@@ -1,7 +1,14 @@
 // src/professional/dto/create-availability.dto.ts
 import { IsEnum, IsUUID, IsString } from 'class-validator';
-import { Weekday } from './create-professional.dto';
-
+export enum Weekday {
+  MONDAY = 'MONDAY',
+  TUESDAY = 'TUESDAY',
+  WEDNESDAY = 'WEDNESDAY',
+  THURSDAY = 'THURSDAY',
+  FRIDAY = 'FRIDAY',
+  SATURDAY = 'SATURDAY',
+  SUNDAY = 'SUNDAY',
+}
 
 export class CreateAvailabilityDto {
   @IsUUID()
