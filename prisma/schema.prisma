@@ -13,6 +13,17 @@ enum JobApplicationStatus {
   IN_REVIEW      // Em análise
   INTERVIEW      // Agendado para entrevista
 }
+enum DesiredPosition {
+  BABYSITTER       // Babá
+  HOUSEKEEPER      // Diarista / Empregada doméstica
+  COOK             // Cozinheira
+  CAREGIVER        // Cuidadora de idosos ou pessoas especiais
+  GARDENER         // Jardineiro
+  IRONING          // Passadeira
+  CLEANING_ASSISTANT // Auxiliar de limpeza
+  OTHER            // Outro (cargo personalizado)
+}
+
 model JobApplication {
   id                      String   @id @default(uuid())
   locationId       String
@@ -41,20 +52,32 @@ model JobApplication {
 
 
 model Professional {
-  id               String              @id @default(uuid())
-  fullName         String
-  email            String              @unique
-  phoneNumber      String
-  isAvailable      Boolean             @default(false) // ← disponibilidade atual geral (Que deterina se pode ser contratada)
-  availabilityType GeneralAvailability // ← enum
-  experienceLevel  ExperienceLevel // ← enum
-  specialties      Specialty[]         @relation("ProfessionalSpecialties")
-  availability     Availability[]
-  location         Location            @relation(fields: [locationId], references: [id])
-  locationId       String
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  id                   String              @id @default(uuid()) // Identificador único do profissional
+  fullName             String                                 // Nome completo do profissional
+  email                String              @unique             // Email do profissional (único)
+  phoneNumber          String                                 // Número de telefone
+  isAvailable          Boolean             @default(false)     // Indica se o profissional está disponível para ser contratado
+  availabilityType     GeneralAvailability                     // Tipo de disponibilidade geral (tempo integral, parcial, etc.)
+  experienceLevel      ExperienceLevel                         // Nível de experiência do profissional
+  specialties          Specialty[]         @relation("ProfessionalSpecialties") // Especialidades atribuídas ao profissional
+  availability         Availability[]                          // Dias e horários disponíveis do profissional
+  location             Location            @relation(fields: [locationId], references: [id]) // Localização atual
+  locationId           String                                 // ID da localização
+  birthDate            DateTime                               // Data de nascimento
+  maritalStatus        String                                 // Estado civil (ex: solteiro, casado)
+  hasChildren          Boolean                                // Indica se o profissional tem filhos
+  knownDiseases        String?                                // Informações sobre doenças conhecidas (opcional)
+  desiredPosition      DesiredPosition                                 // Cargo desejado (ex: babá, diarista)
+  expectedSalary       Int                                    // Pretensão salarial
+  highestDegree        String                                 // Grau acadêmico mais elevado concluído
+  courses              String[]                               // Cursos realizados (ex: primeiros socorros, culinária)
+  languages            String[]                               // Idiomas que o profissional fala
+  skillsAndQualities   String[]                               // Habilidades e qualidades (ex: pontual, cuidadosa)
+
+  createdAt            DateTime            @default(now())    // Data de criação do registro
+  updatedAt            DateTime            @updatedAt         // Data da última atualização do registro
 }
+
 
 model Specialty {
   id            String         @id @default(uuid())
