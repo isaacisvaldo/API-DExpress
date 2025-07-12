@@ -12,6 +12,7 @@ import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { CreateLocationDto } from 'src/location/dto/create-location.dto';
 import { DesiredPosition } from 'src/common/enums/desired-position.enum'; // ajuste o path se necessário
+import { MaritalStatus } from 'src/common/enums/marital-status.enum';
 
 export class CreateJobApplicationDto {
   @ApiProperty({ example: 'Isaac Bunga' })
@@ -43,9 +44,9 @@ export class CreateJobApplicationDto {
   @IsDateString()
   birthDate: Date;
 
-  @ApiProperty({ example: 'Casado' })
-  @IsString()
-  maritalStatus: string;
+@ApiProperty({ enum: MaritalStatus, example: MaritalStatus.MARRIED })
+@IsEnum(MaritalStatus)
+maritalStatus: MaritalStatus;
 
   @ApiProperty({ example: true })
   @IsBoolean()
