@@ -7,15 +7,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 enum JobApplicationStatus {
-  PENDING        // Aguardando avaliação
-  ACCEPTED       // Candidato aprovado
-  REJECTED       // Candidato rejeitado
-  IN_REVIEW      // Em análise
-  INTERVIEW      // Agendado para entrevista
+  PENDING
+  IN_REVIEW
+  INTERVIEW
+  ACCEPTED
+  REJECTED
 }
+enum MaritalStatus {
+  SINGLE         // Solteiro(a)
+  MARRIED        // Casado(a)
+  DIVORCED       // Divorciado(a)
+  WIDOWED        // Viúvo(a)
+  SEPARATED      // Separado(a)
+  STABLE_UNION   // União Estável
+}
+
+enum DesiredPosition {
+  BABYSITTER       // Babá
+  HOUSEKEEPER      // Diarista / Empregada doméstica
+  COOK             // Cozinheira
+  CAREGIVER        // Cuidadora de idosos ou pessoas especiais
+  GARDENER         // Jardineiro
+  IRONING          // Passadeira
+  CLEANING_ASSISTANT // Auxiliar de limpeza
+  OTHER            // Outro (cargo personalizado)
+}
+
 model JobApplication {
   id                      String   @id @default(uuid())
-  locationId       String
+  locationId              String
   fullName                String
   identityNumber          String   // Nº BI
   phoneNumber             String
@@ -23,10 +43,10 @@ model JobApplication {
   email                   String
   address                 String
   birthDate               DateTime
-  maritalStatus           String   // Estado Civil
+  maritalStatus           MaritalStatus   // Estado Civil
   hasChildren             Boolean
   knownDiseases           String?  // Doenças
-  desiredPosition         String   // Cargo
+  desiredPosition         DesiredPosition   // Cargo
   languages               String[] // Idiomas
   availabilityDate        DateTime // Data de disponibilidade para início
   professionalExperience  String   // Experiência Profissional
@@ -41,20 +61,53 @@ model JobApplication {
 
 
 model Professional {
-  id               String              @id @default(uuid())
-  fullName         String
-  email            String              @unique
-  phoneNumber      String
-  isAvailable      Boolean             @default(false) // ← disponibilidade atual geral (Que deterina se pode ser contratada)
-  availabilityType GeneralAvailability // ← enum
-  experienceLevel  ExperienceLevel // ← enum
-  specialties      Specialty[]         @relation("ProfessionalSpecialties")
-  availability     Availability[]
-  location         Location            @relation(fields: [locationId], references: [id])
-  locationId       String
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  id                   String              @id @default(uuid()) // Identificador único do profissional
+  fullName             String                                 // Nome completo do profissional
+  email                String              @unique             // Email do profissional (único)
+  phoneNumber          String                                 // Número de telefone
+  isAvailable          Boolean             @default(false)     // Indica se o profissional está disponível para ser contratado
+  availabilityType     GeneralAvailability                     // Tipo de disponibilidade geral (tempo integral, parcial, etc.)
+  experienceLevel      ExperienceLevel                         // Nível de experiência do profissional
+  specialties          Specialty[]         @relation("ProfessionalSpecialties") // Especialidades atribuídas ao profissional
+  availability         Availability[]                          // Dias e horários disponíveis do profissional
+  location             Location            @relation(fields: [locationId], references: [id]) // Localização atual
+  locationId           String                                 // ID da localização
+  profileImage           String?
+  birthDate            DateTime            @default(now())     // Data de nascimento
+  maritalStatus        String              @default("Não informado") // Estado civil
+  hasChildren          Boolean             @default(false)     // Indica se o profissional tem filhos
+  knownDiseases        String?                                 // Informações sobre doenças conhecidas (opcional)
+  desiredPosition      DesiredPosition     @default(HOUSEKEEPER) // Cargo desejado (ex: babá, diarista)
+  expectedSalary       Int                 @default(0)          // Pretensão salarial
+  highestDegree        String              @default("Não informado") // Grau acadêmico mais elevado concluído
+  courses              String[]            @default([])         // Cursos realizados
+  languages            String[]            @default([])         // Idiomas que o profissional fala
+  skillsAndQualities   String[]            @default([])         // Habilidades e qualidades
+  createdAt            DateTime            @default(now())     // Data de criação do registro
+  updatedAt            DateTime            @updatedAt          // Data da última atualização do registro
+  Document Document[]
 }
+enum DocumentType {
+  IDENTITY_DOCUMENT    // Documento de Identificação (BI, passaporte, etc.)
+  CRIMINAL_RECORD      // Registo Criminal
+  TRAINING_CERTIFICATE // Certificado de Formação
+  MEDICAL_CERTIFICATE  // Atestado Médico
+  PHOTO                // Foto de Perfil
+  OTHER                // Outro
+}
+
+model Document {
+  id             String        @id @default(uuid())                // ID único do documento
+  professional   Professional  @relation(fields: [professionalId], references: [id])
+  professionalId String                                          // ID do profissional vinculado
+  type           DocumentType                                           // Tipo do documento (ex: BI, certificado, etc.)
+  url            String                                           // URL do arquivo/documento
+  createdAt      DateTime      @default(now())                    // Data de criação
+  updatedAt      DateTime      @updatedAt                         // Data da última atualização
+}
+
+
+
 
 model Specialty {
   id            String         @id @default(uuid())

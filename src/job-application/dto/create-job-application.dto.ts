@@ -6,10 +6,12 @@ import {
   IsArray,
   IsDateString,
   ValidateNested,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { CreateLocationDto } from 'src/location/dto/create-location.dto';
+import { DesiredPosition } from 'src/common/enums/desired-position.enum'; // ajuste o path se necessário
 
 export class CreateJobApplicationDto {
   @ApiProperty({ example: 'Isaac Bunga' })
@@ -54,9 +56,12 @@ export class CreateJobApplicationDto {
   @IsString()
   knownDiseases?: string;
 
-  @ApiProperty({ example: 'Motorista' })
-  @IsString()
-  desiredPosition: string;
+  @ApiProperty({
+    enum: DesiredPosition,
+    example: DesiredPosition.COOK,
+  })
+  @IsEnum(DesiredPosition)
+  desiredPosition: DesiredPosition;
 
   @ApiProperty({ example: ['Português', 'Inglês'], type: [String] })
   @IsArray()
@@ -75,12 +80,18 @@ export class CreateJobApplicationDto {
   @IsString()
   highestDegree: string;
 
-  @ApiProperty({ example: ['Curso de Primeiros Socorros', 'Curso de Condução Defensiva'], type: [String] })
+  @ApiProperty({
+    example: ['Curso de Primeiros Socorros', 'Curso de Condução Defensiva'],
+    type: [String],
+  })
   @IsArray()
   @IsString({ each: true })
   courses: string[];
 
-  @ApiProperty({ example: ['Responsável', 'Proativo', 'Boa comunicação'], type: [String] })
+  @ApiProperty({
+    example: ['Responsável', 'Proativo', 'Boa comunicação'],
+    type: [String],
+  })
   @IsArray()
   @IsString({ each: true })
   skillsAndQualities: string[];

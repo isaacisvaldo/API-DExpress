@@ -1,30 +1,52 @@
 // src/professional/professional.service.ts
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProfessionalDto } from './dto/create-professional.dto';
 import { FilterProfessionalDto } from './dto/filter-professional.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
+import { JobApplicationStatus } from '@prisma/client';
 
 @Injectable()
 export class ProfessionalService {
   constructor(private readonly prisma: PrismaService) {}
 
 async create(data: CreateProfessionalDto) {
-  return this.prisma.professional.create({
+  const application = await this.prisma.jobApplication.findUnique({
+    where: { id: data.applicationId },
+    include: { location: true },
+  });
+
+   if (!application) {
+      throw new NotFoundException('Candidatura não encontrada.');
+    }
+
+    if (application.status !== JobApplicationStatus.ACCEPTED) {
+      throw new BadRequestException('A candidatura ainda não foi aprovada.');
+    }
+
+  return await this.prisma.professional.create({
     data: {
-      fullName: data.fullName,
-      email: data.email,
-      phoneNumber: data.phoneNumber,
+      fullName: application.fullName,
+      email: application.email,
+      phoneNumber: application.phoneNumber,
       availabilityType: data.availabilityType,
       experienceLevel: data.experienceLevel,
+      birthDate: application.birthDate,
+      maritalStatus: application.maritalStatus,
+      hasChildren: application.hasChildren,
+      knownDiseases: application.knownDiseases,
+      desiredPosition: application.desiredPosition as any, // cast se necessário
+      expectedSalary: data.expectedSalary,
+      highestDegree: application.highestDegree,
+      courses: application.courses,
+      languages: application.languages,
+      skillsAndQualities: application.skillsAndQualities,
       specialties: {
         connect: data.specialtyIds.map((id) => ({ id })),
       },
-      location: {
-        create: {
-          cityId: data.location.cityId,
-          districtId: data.location.districtId,
-          street: data.location.street,
+    location: {
+        connect: {
+          id: application.locationId,
         },
       },
     },
@@ -39,6 +61,7 @@ async create(data: CreateProfessionalDto) {
     },
   });
 }
+
 findByFilters(filters: FilterProfessionalDto) {
   const {
     name,

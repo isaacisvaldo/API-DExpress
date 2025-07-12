@@ -16,6 +16,7 @@ import {
 
 import { JobApplicationService } from './job-application.service';
 import { CreateJobApplicationDto } from './dto/create-job-application.dto';
+import { UpdateJobApplicationStatusDto } from './dto/update-status.dto';
 
 @ApiTags('Job Applications')
 @Controller('job-application')
@@ -54,7 +55,7 @@ export class JobApplicationController {
   findOne(@Param('id') id: string) {
     return this.jobApplicationService.findOne(id);
   }
-
+ /*
   @Patch(':id')
   @ApiOperation({ summary: 'Update a job application by ID' })
   @ApiParam({ name: 'id', type: String })
@@ -62,7 +63,7 @@ export class JobApplicationController {
     status: 200,
     description: 'Job application updated successfully',
   })
-  /*
+ 
   update(
     @Param('id') id: string,
     @Body() updateJobApplicationDto: UpdateJobApplicationDto,
@@ -80,4 +81,12 @@ export class JobApplicationController {
   remove(@Param('id') id: string) {
     return this.jobApplicationService.remove(id);
   }
+@Patch(':id/status')
+@ApiOperation({ summary: 'Update a Status application by ID' })
+updateStatus(
+  @Param('id') id: string,
+  @Body() dto: UpdateJobApplicationStatusDto,
+) {
+  return this.jobApplicationService.updateStatus(id, dto);
+}
 }
