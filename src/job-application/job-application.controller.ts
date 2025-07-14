@@ -6,6 +6,9 @@ import {
   Patch,
   Param,
   Delete,
+  HttpCode,
+  HttpStatus,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +21,7 @@ import {
 import { JobApplicationService } from './job-application.service';
 import { CreateJobApplicationDto } from './dto/create-job-application.dto';
 import { UpdateJobApplicationStatusDto } from './dto/update-status.dto';
+import { FilterJobApplicationDto } from './dto/filter-job-application.dto';
 
 @ApiTags('Job Applications')
 @Controller('job-application')
@@ -32,6 +36,7 @@ export class JobApplicationController {
     status: 201,
     description: 'Job application successfully created',
   })
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createJobApplicationDto: CreateJobApplicationDto) {
     return this.jobApplicationService.create(createJobApplicationDto);
   }
@@ -42,9 +47,11 @@ export class JobApplicationController {
     status: 200,
     description: 'List of job applications',
   })
-  findAll() {
-    return this.jobApplicationService.findAll();
-  }
+@Get()
+@ApiOperation({ summary: 'Listar candidaturas com filtros e paginação' })
+async findAll(@Query() query: FilterJobApplicationDto) {
+  return this.jobApplicationService.findAll(query);
+}
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific job application by ID' })

@@ -1,39 +1,51 @@
+// src/professional/dto/filter-professional.dto.ts
+import { IsOptional, IsString, IsEnum, IsArray, IsNumber, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ExperienceLevel, GeneralAvailability } from './create-professional.dto'; // ajuste se estiver em outro arquivo
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsUUID, IsString, IsEnum, IsArray } from 'class-validator';
-import { GeneralAvailability, ExperienceLevel } from './create-professional.dto';
 
 export class FilterProfessionalDto {
-  @ApiPropertyOptional({ example: 'Isaac', description: 'Nome do profissional' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   name?: string;
 
-  @ApiPropertyOptional({ example: '7c1f0a7e-1f4d-4c67-9f3c-0f85eae98760', description: 'ID da cidade' })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID()
+  @IsString()
   cityId?: string;
 
-  @ApiPropertyOptional({ example: 'a3cf502a-1215-4574-8b89-3de20b51524b', description: 'ID do distrito' })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID()
+  @IsString()
   districtId?: string;
 
-  @ApiPropertyOptional({ enum: GeneralAvailability, example: GeneralAvailability.FULL_TIME, description: 'Tipo de disponibilidade' })
+  @ApiPropertyOptional({ enum: GeneralAvailability })
   @IsOptional()
   @IsEnum(GeneralAvailability)
   availabilityType?: GeneralAvailability;
 
-  @ApiPropertyOptional({ enum: ExperienceLevel, example: ExperienceLevel.THREE_TO_FIVE, description: 'Nível de experiência' })
+  @ApiPropertyOptional({ enum: ExperienceLevel })
   @IsOptional()
   @IsEnum(ExperienceLevel)
   experienceLevel?: ExperienceLevel;
 
-  @ApiPropertyOptional({
-    example: ['23c1b774-2f33-4b90-8f83-874cbd02d9e5'],
-    type: [String],
-    description: 'Lista de IDs de especialidades',
-  })
+  @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
   specialtyIds?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  limit?: number = 10;
 }
