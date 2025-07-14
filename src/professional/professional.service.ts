@@ -5,6 +5,7 @@ import { FilterProfessionalDto } from './dto/filter-professional.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { JobApplicationStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client'; // Import necessário
 
 @Injectable()
 export class ProfessionalService {
@@ -62,7 +63,8 @@ async create(data: CreateProfessionalDto) {
   });
 }
 
-findByFilters(filters: FilterProfessionalDto) {
+
+async findByFilters(filters: FilterProfessionalDto) {
   const {
     name,
     cityId,
@@ -70,43 +72,68 @@ findByFilters(filters: FilterProfessionalDto) {
     availabilityType,
     experienceLevel,
     specialtyIds,
+    page = 1,
+    limit = 10,
   } = filters;
 
-  // Tratamento para specialtyIds: aceita string ou string[]
   const specialtiesFilter =
     specialtyIds && specialtyIds.length > 0
       ? {
           some: {
             id: Array.isArray(specialtyIds)
               ? { in: specialtyIds }
-              : specialtyIds, // string única
+              : specialtyIds,
           },
         }
       : undefined;
 
-  return this.prisma.professional.findMany({
-    where: {
-      fullName: name ? { contains: name, mode: 'insensitive' } : undefined,
-      availabilityType: availabilityType || undefined,
-      experienceLevel: experienceLevel || undefined,
-      location: {
-        cityId: cityId || undefined,
-        districtId: districtId || undefined,
-      },
-      specialties: specialtiesFilter,
+  const where: Prisma.ProfessionalWhereInput = {
+    fullName: name
+      ? {
+          contains: name,
+          mode: Prisma.QueryMode.insensitive, // ✅ CORRETO
+        }
+      : undefined,
+    availabilityType: availabilityType || undefined,
+    experienceLevel: experienceLevel || undefined,
+    location: {
+      cityId: cityId || undefined,
+      districtId: districtId || undefined,
     },
-    include: {
-      specialties: true,
-      availability: true,
-      location: {
-        include: {
-          city: true,
-          district: true,
+    specialties: specialtiesFilter,
+  };
+
+  const [data, total] = await Promise.all([
+    this.prisma.professional.findMany({
+      where,
+      include: {
+        specialties: true,
+        availability: true,
+        location: {
+          include: {
+            city: true,
+            district: true,
+          },
         },
       },
-    },
-  });
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    }),
+    this.prisma.professional.count({ where }),
+  ]);
+
+  return {
+    data,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
 }
+
 
 
     async addAvailability(data: CreateAvailabilityDto) {

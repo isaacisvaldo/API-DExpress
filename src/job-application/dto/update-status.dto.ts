@@ -1,12 +1,15 @@
-// src/job-application/dto/update-status.dto.ts
-import { IsEnum } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum, IsOptional } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { JobApplicationStatus } from '../types/types';
 
-
-
 export class UpdateJobApplicationStatusDto {
-  @ApiProperty({ enum: JobApplicationStatus })
+  @ApiPropertyOptional({
+    enum: JobApplicationStatus,
+    example: JobApplicationStatus.PENDING,
+    default: JobApplicationStatus.PENDING,
+    description: 'Selecione o novo status da candidatura',
+  })
+  @IsOptional()
   @IsEnum(JobApplicationStatus)
-  status: JobApplicationStatus;
+  status: JobApplicationStatus = JobApplicationStatus.PENDING;
 }
