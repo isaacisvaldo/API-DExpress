@@ -27,7 +27,7 @@ export class JobApplicationService {
         phoneNumber: createDto.phoneNumber,
         optionalPhoneNumber: createDto.optionalPhoneNumber,
         email: createDto.email,
-        address: createDto.address,
+       
         birthDate: new Date(createDto.birthDate),
         maritalStatus: createDto.maritalStatus,
         hasChildren: createDto.hasChildren,

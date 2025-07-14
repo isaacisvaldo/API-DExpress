@@ -12,6 +12,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiParam,
+  ApiBody
 } from '@nestjs/swagger';
 
 import { JobApplicationService } from './job-application.service';
@@ -82,6 +83,7 @@ export class JobApplicationController {
     return this.jobApplicationService.remove(id);
   }
 @Patch(':id/status')
+@ApiBody({ type: UpdateJobApplicationStatusDto }) 
 @ApiOperation({ summary: 'Update a Status application by ID' })
 updateStatus(
   @Param('id') id: string,

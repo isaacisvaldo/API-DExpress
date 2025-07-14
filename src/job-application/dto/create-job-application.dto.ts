@@ -36,9 +36,6 @@ export class CreateJobApplicationDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'Rua do Palácio, Bairro XYZ' })
-  @IsString()
-  address: string;
 
   @ApiProperty({ example: '1990-06-25' })
   @IsDateString()

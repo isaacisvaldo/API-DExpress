@@ -41,7 +41,6 @@ model JobApplication {
   phoneNumber             String
   optionalPhoneNumber     String?
   email                   String
-  address                 String
   birthDate               DateTime
   maritalStatus           MaritalStatus   // Estado Civil
   hasChildren             Boolean

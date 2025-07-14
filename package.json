@@ -27,6 +27,7 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:reset": "npx prisma migrate reset --force --skip-seed && ts-node prisma/seed.ts"
   },
+  
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
