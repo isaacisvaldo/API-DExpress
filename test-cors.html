@@ -16,7 +16,7 @@
       resultado.textContent = 'Enviando requisição...';
 
       try {
-        const response = await fetch('https://api-dexpress.onrender.com/cities', {
+        const response = await fetch('http://localhost:3000/cities', {
           method: 'GET', // ou POST, PUT, DELETE etc.
           headers: {
             'Content-Type': 'application/json'

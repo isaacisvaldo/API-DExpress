@@ -5,9 +5,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Middleware para garantir que CORS funcione em QUALQUER rota e bypass do Render/Cloudflare
+
 app.enableCors({
-  origin: '*', // ou '*' para testes
+  origin: true, // ou '*' para testes
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
