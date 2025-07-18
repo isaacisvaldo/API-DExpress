@@ -5,7 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Middleware para garantir que todos os headers CORS sejam enviados
+  // Middleware para garantir que CORS funcione em QUALQUER rota e bypass do Render/Cloudflare
   app.use((req, res, next) => {
     const origin = req.headers.origin || '*';
     res.header('Access-Control-Allow-Origin', origin);
@@ -16,8 +16,9 @@ async function bootstrap() {
       req.headers['access-control-request-headers'] || '*'
     );
 
+    // Responde automaticamente requisições preflight (OPTIONS)
     if (req.method === 'OPTIONS') {
-      return res.sendStatus(204); // Responde ao preflight sem bloquear
+      return res.sendStatus(204);
     }
     next();
   });
@@ -35,7 +36,6 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  // Inicia servidor
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
