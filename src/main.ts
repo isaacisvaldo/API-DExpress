@@ -4,6 +4,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  // Abilitar o cors
+  app.enableCors();
     // Configuração da documentação
   const config = new DocumentBuilder()
     .setTitle('DExpress')
