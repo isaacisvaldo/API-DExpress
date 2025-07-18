@@ -6,22 +6,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Middleware para garantir que CORS funcione em QUALQUER rota e bypass do Render/Cloudflare
-  app.use((req, res, next) => {
-    const origin = req.headers.origin || '*';
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-    res.header(
-      'Access-Control-Allow-Headers',
-      req.headers['access-control-request-headers'] || '*'
-    );
-
-    // Responde automaticamente requisições preflight (OPTIONS)
-    if (req.method === 'OPTIONS') {
-      return res.sendStatus(204);
-    }
-    next();
-  });
+app.enableCors({
+  origin: '*', // ou '*' para testes
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+})
 
   // Swagger
   const config = new DocumentBuilder()

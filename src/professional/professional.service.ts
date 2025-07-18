@@ -4,8 +4,9 @@ import { CreateProfessionalDto } from './dto/create-professional.dto';
 import { FilterProfessionalDto } from './dto/filter-professional.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
-import { JobApplicationStatus } from '@prisma/client';
-import { Prisma } from '@prisma/client'; // Import necessário
+
+import { Prisma } from '@prisma/client'; 
+import { JobApplicationStatus } from 'src/job-application/types/types';
 
 @Injectable()
 export class ProfessionalService {
@@ -36,7 +37,7 @@ async create(data: CreateProfessionalDto) {
       maritalStatus: application.maritalStatus,
       hasChildren: application.hasChildren,
       knownDiseases: application.knownDiseases,
-      desiredPosition: application.desiredPosition as any, // cast se necessário
+      desiredPosition: application.desiredPosition as any, 
       expectedSalary: data.expectedSalary,
       highestDegree: application.highestDegree,
       courses: application.courses,
