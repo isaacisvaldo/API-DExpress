@@ -13,8 +13,6 @@ const app = await NestFactory.create(AppModule, { cors: true });
     .setDescription('Plataforma online que conecta famílias a profissionais domésticos qualificados em Luanda')
     .setVersion('1.0')
     .addBearerAuth()
-     // Garante que o Swagger reflita o prefixo /api
-     .addServer('/api')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
