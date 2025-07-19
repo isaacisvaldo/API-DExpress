@@ -65,7 +65,9 @@ export class UsersService {
    */
   async findAll() {
     return this.prisma.user.findMany({
+      
       include: {
+        
         clientProfile: true,
         companyProfile: true,
       },
