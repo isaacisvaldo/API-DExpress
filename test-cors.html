@@ -16,7 +16,7 @@
       resultado.textContent = 'Enviando requisição...';
 
       try {
-        const response = await fetch('http://localhost:3000/cities', {
+        const response = await fetch('https://api-envio-email-vrac.onrender.com/api', {
           method: 'GET', // ou POST, PUT, DELETE etc.
           headers: {
             'Content-Type': 'application/json'

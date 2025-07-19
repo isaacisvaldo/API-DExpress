@@ -6,162 +6,17 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-enum JobApplicationStatus {
-  PENDING
-  IN_REVIEW
-  INTERVIEW
-  ACCEPTED
-  REJECTED
-}
-enum MaritalStatus {
-  SINGLE         // Solteiro(a)
-  MARRIED        // Casado(a)
-  DIVORCED       // Divorciado(a)
-  WIDOWED        // Viúvo(a)
-  SEPARATED      // Separado(a)
-  STABLE_UNION   // União Estável
-}
 
-enum DesiredPosition {
-  BABYSITTER       // Babá
-  HOUSEKEEPER      // Diarista / Empregada doméstica
-  COOK             // Cozinheira
-  CAREGIVER        // Cuidadora de idosos ou pessoas especiais
-  GARDENER         // Jardineiro
-  IRONING          // Passadeira
-  CLEANING_ASSISTANT // Auxiliar de limpeza
-  OTHER            // Outro (cargo personalizado)
-}
-
-model JobApplication {
-  id                      String   @id @default(uuid())
-  locationId              String
-  fullName                String
-  identityNumber          String   // Nº BI
-  phoneNumber             String
-  optionalPhoneNumber     String?
-  email                   String
-  birthDate               DateTime
-  maritalStatus           MaritalStatus   // Estado Civil
-  hasChildren             Boolean
-  knownDiseases           String?  // Doenças
-  desiredPosition         DesiredPosition   // Cargo
-  languages               String[] // Idiomas
-  availabilityDate        DateTime // Data de disponibilidade para início
-  professionalExperience  String   // Experiência Profissional
-  highestDegree           String   // Grau mais elevado concluído
-  courses                 String[] // Cursos
-  skillsAndQualities      String []  // Habilidades e Qualidades
-  status                  JobApplicationStatus @default(PENDING)
-  location               Location            @relation(fields: [locationId], references: [id])
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-}
-
-
-model Professional {
-  id                   String              @id @default(uuid()) // Identificador único do profissional
-  fullName             String                                 // Nome completo do profissional
-  email                String              @unique             // Email do profissional (único)
-  phoneNumber          String                                 // Número de telefone
-  isAvailable          Boolean             @default(false)     // Indica se o profissional está disponível para ser contratado
-  availabilityType     GeneralAvailability                     // Tipo de disponibilidade geral (tempo integral, parcial, etc.)
-  experienceLevel      ExperienceLevel                         // Nível de experiência do profissional
-  specialties          Specialty[]         @relation("ProfessionalSpecialties") // Especialidades atribuídas ao profissional
-  availability         Availability[]                          // Dias e horários disponíveis do profissional
-  location             Location            @relation(fields: [locationId], references: [id]) // Localização atual
-  locationId           String                                 // ID da localização
-  profileImage           String?
-  birthDate            DateTime            @default(now())     // Data de nascimento
-  maritalStatus        String              @default("Não informado") // Estado civil
-  hasChildren          Boolean             @default(false)     // Indica se o profissional tem filhos
-  knownDiseases        String?                                 // Informações sobre doenças conhecidas (opcional)
-  desiredPosition      DesiredPosition     @default(HOUSEKEEPER) // Cargo desejado (ex: babá, diarista)
-  expectedSalary       Int                 @default(0)          // Pretensão salarial
-  highestDegree        String              @default("Não informado") // Grau acadêmico mais elevado concluído
-  courses              String[]            @default([])         // Cursos realizados
-  languages            String[]            @default([])         // Idiomas que o profissional fala
-  skillsAndQualities   String[]            @default([])         // Habilidades e qualidades
-  createdAt            DateTime            @default(now())     // Data de criação do registro
-  updatedAt            DateTime            @updatedAt          // Data da última atualização do registro
-  Document Document[]
-}
 enum DocumentType {
-  IDENTITY_DOCUMENT    // Documento de Identificação (BI, passaporte, etc.)
-  CRIMINAL_RECORD      // Registo Criminal
+  IDENTITY_DOCUMENT // Documento de Identificação (BI, passaporte, etc.)
+  CRIMINAL_RECORD // Registo Criminal
   TRAINING_CERTIFICATE // Certificado de Formação
-  MEDICAL_CERTIFICATE  // Atestado Médico
-  PHOTO                // Foto de Perfil
-  OTHER                // Outro
+  MEDICAL_CERTIFICATE // Atestado Médico
+  PHOTO // Foto de Perfil
+  OTHER // Outro
 }
 
-model Document {
-  id             String        @id @default(uuid())                // ID único do documento
-  professional   Professional  @relation(fields: [professionalId], references: [id])
-  professionalId String                                          // ID do profissional vinculado
-  type           DocumentType                                           // Tipo do documento (ex: BI, certificado, etc.)
-  url            String                                           // URL do arquivo/documento
-  createdAt      DateTime      @default(now())                    // Data de criação
-  updatedAt      DateTime      @updatedAt                         // Data da última atualização
-}
-
-
-
-
-model Specialty {
-  id            String         @id @default(uuid())
-  name          String         @unique
-  professionals Professional[] @relation("ProfessionalSpecialties")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-}
-
-
-model Availability {
-  id             String       @id @default(uuid())
-  professional   Professional @relation(fields: [professionalId], references: [id])
-  professionalId String
-  weekday        Weekday // ← agora usa enum
-  startTime      String // e.g., "08:00"
-  endTime        String // e.g., "17:00"
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-}
-
-model Location {
-  id             String          @id @default(uuid())
-  city           City            @relation(fields: [cityId], references: [id])
-  cityId         String
-  district       District        @relation(fields: [districtId], references: [id])
-  districtId     String
-  street         String?
-  professionals  Professional[]  // One location → many professionals
-  jobApplication  JobApplication[]  // One location → many jobApplication
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-}
-
-model City {
-  id        String     @id @default(uuid())
-  name      String     @unique
-  districts District[]
-  locations Location[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-}
-
-model District {
-  id        String     @id @default(uuid())
-  name      String
-  city      City       @relation(fields: [cityId], references: [id])
-  cityId    String
-  locations Location[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  @@unique([name, cityId]) 
-}
-
- enum GeneralAvailability {
+enum GeneralAvailability {
   FULL_TIME
   PART_TIME
   DAILY
@@ -184,4 +39,222 @@ enum Weekday {
   FRIDAY
   SATURDAY
   SUNDAY
+}
+
+enum UserType {
+  CLIENT // Pessoa física
+  COMPANY // Pessoa jurídica
+}
+
+enum JobApplicationStatus {
+  PENDING
+  IN_REVIEW
+  INTERVIEW
+  ACCEPTED
+  REJECTED
+}
+
+enum MaritalStatus {
+  SINGLE // Solteiro(a)
+  MARRIED // Casado(a)
+  DIVORCED // Divorciado(a)
+  WIDOWED // Viúvo(a)
+  SEPARATED // Separado(a)
+  STABLE_UNION // União Estável
+}
+
+enum DesiredPosition {
+  BABYSITTER // Babá
+  HOUSEKEEPER // Diarista / Empregada doméstica
+  COOK // Cozinheira
+  CAREGIVER // Cuidadora de idosos ou pessoas especiais
+  GARDENER // Jardineiro
+  IRONING // Passadeira
+  CLEANING_ASSISTANT // Auxiliar de limpeza
+  OTHER // Outro (cargo personalizado)
+}
+
+model JobApplication {
+  id                     String               @id @default(uuid())
+  locationId             String
+  fullName               String
+  identityNumber         String // Nº BI
+  phoneNumber            String
+  optionalPhoneNumber    String?
+  email                  String
+  birthDate              DateTime
+  maritalStatus          MaritalStatus // Estado Civil
+  hasChildren            Boolean
+  knownDiseases          String? // Doenças
+  desiredPosition        DesiredPosition // Cargo
+  languages              String[] // Idiomas
+  availabilityDate       DateTime // Data de disponibilidade para início
+  professionalExperience String // Experiência Profissional
+  highestDegree          String // Grau mais elevado concluído
+  courses                String[] // Cursos
+  skillsAndQualities     String[] // Habilidades e Qualidades
+  status                 JobApplicationStatus @default(PENDING)
+  location               Location             @relation(fields: [locationId], references: [id])
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+}
+
+model Professional {
+  id                 String              @id @default(uuid()) // Identificador único do profissional
+  fullName           String // Nome completo do profissional
+  email              String              @unique // Email do profissional (único)
+  phoneNumber        String // Número de telefone
+  isAvailable        Boolean             @default(false) // Indica se o profissional está disponível para ser contratado
+  availabilityType   GeneralAvailability // Tipo de disponibilidade geral (tempo integral, parcial, etc.)
+  experienceLevel    ExperienceLevel // Nível de experiência do profissional
+  specialties        Specialty[]         @relation("ProfessionalSpecialties") // Especialidades atribuídas ao profissional
+  availability       Availability[] // Dias e horários disponíveis do profissional
+  location           Location            @relation(fields: [locationId], references: [id]) // Localização atual
+  locationId         String // ID da localização
+  profileImage       String?
+  birthDate          DateTime            @default(now()) // Data de nascimento
+  maritalStatus      String              @default("Não informado") // Estado civil
+  hasChildren        Boolean             @default(false) // Indica se o profissional tem filhos
+  knownDiseases      String? // Informações sobre doenças conhecidas (opcional)
+  desiredPosition    DesiredPosition     @default(HOUSEKEEPER) // Cargo desejado (ex: babá, diarista)
+  expectedSalary     Int                 @default(0) // Pretensão salarial
+  highestDegree      String              @default("Não informado") // Grau acadêmico mais elevado concluído
+  courses            String[]            @default([]) // Cursos realizados
+  languages          String[]            @default([]) // Idiomas que o profissional fala
+  skillsAndQualities String[]            @default([]) // Habilidades e qualidades
+  createdAt          DateTime            @default(now()) // Data de criação do registro
+  updatedAt          DateTime            @updatedAt // Data da última atualização do registro
+  Document           Document[]
+}
+
+model Document {
+  id             String       @id @default(uuid()) // ID único do documento
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  professionalId String // ID do profissional vinculado
+  type           DocumentType // Tipo do documento (ex: BI, certificado, etc.)
+  url            String // URL do arquivo/documento
+  createdAt      DateTime     @default(now()) // Data de criação
+  updatedAt      DateTime     @updatedAt // Data da última atualização
+}
+
+model Specialty {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  professionals Professional[] @relation("ProfessionalSpecialties")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Availability {
+  id             String       @id @default(uuid())
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  professionalId String
+  weekday        Weekday // ← agora usa enum
+  startTime      String // e.g., "08:00"
+  endTime        String // e.g., "17:00"
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Location {
+  id             String           @id @default(uuid())
+  city           City             @relation(fields: [cityId], references: [id])
+  cityId         String
+  district       District         @relation(fields: [districtId], references: [id])
+  districtId     String
+  street         String?
+  professionals  Professional[] // One location → many professionals
+  jobApplication JobApplication[] // One location → many jobApplication
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model City {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  districts District[]
+  locations Location[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model District {
+  id        String     @id @default(uuid())
+  name      String
+  city      City       @relation(fields: [cityId], references: [id])
+  cityId    String
+  locations Location[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  @@unique([name, cityId])
+}
+
+model ClientProfile {
+  id               String   @id @default(uuid())
+  fullName         String
+  email            String @unique
+  identityNumber   String? // Nº BI
+  phoneNumber      String
+  optionalContacts String[]
+  address          String
+  // Um ClientProfile pode ter 1 usuário (login)
+  user             User?
+
+}
+
+model CompanyProfile {
+  id              String   @id @default(uuid())
+  companyName     String
+  nif             String
+  email           String @unique
+  phoneNumber     String
+  optionalContact String?
+  address         String
+  state           String
+  //Uma CompanyProfile pode ter 1 usuário (login)
+  user            User?
+ 
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  password         String
+  isActive         Boolean          @default(true) 
+  type             UserType         @default(CLIENT) // CLIENT ou COMPANY
+  // Cada User pode estar associado a UM perfil de cliente ou UM perfil de empresa
+  clientProfileId  String?          @unique
+  companyProfileId String?          @unique
+  clientProfile    ClientProfile?   @relation(fields: [clientProfileId], references: [id])
+  companyProfile   CompanyProfile?  @relation(fields: [companyProfileId], references: [id])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+
+
+model AdminUser {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  password    String
+  role        InternalRole
+  permissions Permission[] @relation("AdminPermissions")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+enum InternalRole {
+  GENERAL_ADMIN
+  OPERATIONS_MANAGER
+  HR_COORDINATOR
+  QUALITY_SUPERVISOR
+  CUSTOMER_ASSISTANT
+  FINANCIAL
+  INTERNAL_AUDITOR
+}
+
+model Permission {
+  id     String      @id @default(uuid())
+  name   String      @unique
+  admins AdminUser[] @relation("AdminPermissions")
 }
