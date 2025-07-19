@@ -3,29 +3,21 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
-
-app.enableCors({
-  origin: true, // ou '*' para testes
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-})
-
+const app = await NestFactory.create(AppModule, { cors: true });
+  // Adiciona prefixo global para todas as rotas
+  app.setGlobalPrefix('api');
+  app.enableCors();
   // Swagger
   const config = new DocumentBuilder()
     .setTitle('DExpress')
-    .setDescription(
-      'Plataforma online que conecta famílias a profissionais domésticos qualificados em Luanda'
-    )
+    .setDescription('Plataforma online que conecta famílias a profissionais domésticos qualificados em Luanda')
     .setVersion('1.0')
     .addBearerAuth()
+     // Garante que o Swagger reflita o prefixo /api
+     .addServer('/api')
     .build();
-
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
-
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

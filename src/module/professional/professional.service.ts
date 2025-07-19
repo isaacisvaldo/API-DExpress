@@ -5,8 +5,8 @@ import { FilterProfessionalDto } from './dto/filter-professional.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 
-import { Prisma } from '@prisma/client'; 
-import { JobApplicationStatus } from 'src/job-application/types/types';
+import { JobApplicationStatus, Prisma } from '@prisma/client'; 
+
 
 @Injectable()
 export class ProfessionalService {
