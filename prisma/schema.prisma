@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  
+}
+
 enum DocumentType {
   IDENTITY_DOCUMENT // Documento de Identificação (BI, passaporte, etc.)
   CRIMINAL_RECORD // Registo Criminal
@@ -81,6 +87,7 @@ model JobApplication {
   identityNumber         String // Nº BI
   phoneNumber            String
   optionalPhoneNumber    String?
+  gender Gender  @default(MALE)
   email                  String
   birthDate              DateTime
   maritalStatus          MaritalStatus // Estado Civil
@@ -100,31 +107,44 @@ model JobApplication {
 }
 
 model Professional {
-  id                 String              @id @default(uuid()) // Identificador único do profissional
-  fullName           String // Nome completo do profissional
-  email              String              @unique // Email do profissional (único)
-  phoneNumber        String // Número de telefone
-  isAvailable        Boolean             @default(false) // Indica se o profissional está disponível para ser contratado
-  availabilityType   GeneralAvailability // Tipo de disponibilidade geral (tempo integral, parcial, etc.)
-  experienceLevel    ExperienceLevel // Nível de experiência do profissional
-  specialties        Specialty[]         @relation("ProfessionalSpecialties") // Especialidades atribuídas ao profissional
-  availability       Availability[] // Dias e horários disponíveis do profissional
-  location           Location            @relation(fields: [locationId], references: [id]) // Localização atual
-  locationId         String // ID da localização
-  profileImage       String?
-  birthDate          DateTime            @default(now()) // Data de nascimento
-  maritalStatus      String              @default("Não informado") // Estado civil
-  hasChildren        Boolean             @default(false) // Indica se o profissional tem filhos
-  knownDiseases      String? // Informações sobre doenças conhecidas (opcional)
-  desiredPosition    DesiredPosition     @default(HOUSEKEEPER) // Cargo desejado (ex: babá, diarista)
-  expectedSalary     Int                 @default(0) // Pretensão salarial
-  highestDegree      String              @default("Não informado") // Grau acadêmico mais elevado concluído
-  courses            String[]            @default([]) // Cursos realizados
-  languages          String[]            @default([]) // Idiomas que o profissional fala
-  skillsAndQualities String[]            @default([]) // Habilidades e qualidades
-  createdAt          DateTime            @default(now()) // Data de criação do registro
-  updatedAt          DateTime            @updatedAt // Data da última atualização do registro
-  Document           Document[]
+  id                     String                   @id @default(uuid()) // Identificador único do profissional
+  fullName               String // Nome completo do profissional
+  email                  String                   @unique // Email do profissional (único)
+  phoneNumber            String // Número de telefone
+  isAvailable            Boolean                  @default(false) // Indica se o profissional está disponível para ser contratado
+  availabilityType       GeneralAvailability // Tipo de disponibilidade geral (tempo integral, parcial, etc.)
+  experienceLevel        ExperienceLevel // Nível de experiência do profissional
+  specialties            Specialty[]              @relation("ProfessionalSpecialties") // Especialidades atribuídas ao profissional
+  availability           Availability[] // Dias e horários disponíveis do profissional
+  location               Location                 @relation(fields: [locationId], references: [id]) // Localização atual
+  locationId             String // ID da localização
+  profileImage           String?
+  gender Gender  @default(MALE)
+  birthDate              DateTime                 @default(now()) // Data de nascimento
+  maritalStatus          String                   @default("Não informado") // Estado civil
+  hasChildren            Boolean                  @default(false) // Indica se o profissional tem filhos
+  knownDiseases          String? // Informações sobre doenças conhecidas (opcional)
+  desiredPosition        DesiredPosition          @default(HOUSEKEEPER) // Cargo desejado (ex: babá, diarista)
+  expectedSalary         Int                      @default(0) // Pretensão salarial
+  highestDegree          String                   @default("Não informado") // Grau acadêmico mais elevado concluído
+  courses                String[]                 @default([]) // Cursos realizados
+  languages              String[]                 @default([]) // Idiomas que o profissional fala
+  skillsAndQualities     String[]                 @default([]) // Habilidades e qualidades
+  createdAt              DateTime                 @default(now()) // Data de criação do registro
+  updatedAt              DateTime                 @updatedAt // Data da última atualização do registro
+  Document               Document[]
+  ProfessionalExperience ProfessionalExperience[]
+}
+
+model ProfessionalExperience {
+  id             String       @id @default(uuid()) // ID único do documento
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  professionalId String // ID do profissional vinculado
+  localTrabalho  String
+  cargo          String
+  tempo          String
+  createdAt      DateTime     @default(now()) // Data de criação
+  updatedAt      DateTime     @updatedAt // Data da última atualização
 }
 
 model Document {
@@ -186,61 +206,70 @@ model District {
   locations Location[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+
   @@unique([name, cityId])
 }
 
 model ClientProfile {
   id               String   @id @default(uuid())
   fullName         String
-  email            String @unique
+  email            String   @unique
   identityNumber   String? // Nº BI
   phoneNumber      String
   optionalContacts String[]
   address          String
   // Um ClientProfile pode ter 1 usuário (login)
   user             User?
-
 }
 
+// Informação da Residencia !
+
+//Informação do Contrato terá  id residencia, id cliente perfil, id profissional !
+// Assim, podemos vincular um cliente a uma residência e um profissional a uma residência
+// E também vincular um cliente a um profissional, e um profissional a uma residência
+// Com isso sera possivelfirmar uma contratação e saber que esta vinculado !
 model CompanyProfile {
-  id              String   @id @default(uuid())
+  id              String  @id @default(uuid())
   companyName     String
   nif             String
-  email           String @unique
+  email           String  @unique
   phoneNumber     String
   optionalContact String?
   address         String
   state           String
   //Uma CompanyProfile pode ter 1 usuário (login)
   user            User?
- 
 }
 
 model User {
-  id               String           @id @default(uuid())
-  email            String           @unique
+  id               String          @id @default(uuid())
+  email            String          @unique
   password         String
-  isActive         Boolean          @default(true) 
-  type             UserType         @default(CLIENT) // CLIENT ou COMPANY
+  isActive         Boolean         @default(true)
+  type             UserType        @default(CLIENT) // CLIENT ou COMPANY
   // Cada User pode estar associado a UM perfil de cliente ou UM perfil de empresa
-  clientProfileId  String?          @unique
-  companyProfileId String?          @unique
-  clientProfile    ClientProfile?   @relation(fields: [clientProfileId], references: [id])
-  companyProfile   CompanyProfile?  @relation(fields: [companyProfileId], references: [id])
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  clientProfileId  String?         @unique
+  companyProfileId String?         @unique
+  clientProfile    ClientProfile?  @relation(fields: [clientProfileId], references: [id])
+  companyProfile   CompanyProfile? @relation(fields: [companyProfileId], references: [id])
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 }
 
-
-
 model AdminUser {
-  id          String       @id @default(uuid())
-  email       String       @unique
-  password    String
-  role        InternalRole
-  permissions Permission[] @relation("AdminPermissions")
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id             String       @id @default(uuid())
+  name           String
+  numberphone    String
+  isActive       Boolean      @default(true)
+  identityNumber String       @unique
+  gender Gender  
+  birthDate      DateTime
+  email          String       @unique
+  password       String
+  role           InternalRole
+  permissions    Permission[] @relation("AdminPermissions")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 enum InternalRole {

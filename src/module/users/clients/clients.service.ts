@@ -1,5 +1,5 @@
 // src/client-profile/client-profile.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { CreateClientProfileDto } from './dto/create-client-profile.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
@@ -19,7 +19,7 @@ async create(dto: CreateClientProfileDto) {
   });
 
   if (existingClient) {
-    throw new Error('Já existe um cliente com este e-mail ou telefone.');
+    throw new BadRequestException('Já existe um cliente com este e-mail ou telefone.');
   }
 
   // Cria o cliente se não existir
