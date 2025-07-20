@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { AppController } from './app.controller';
@@ -16,6 +16,8 @@ import { CompanyModule } from './module/users/company/company.module';
 import { UsersModule } from './module/users/users.module';
 import { UsersService } from './module/users/users.service';
 import { PrismaModule } from './common/prisma/prisma.module';
+import { AdminAuthModule } from './module/users/admin/admin-auth/admin-auth.module';
+import { AdminSeeder } from 'prisma/seeds/admin.seeder';
 
 @Module({
   imports: [
@@ -51,9 +53,16 @@ MailerModule.forRootAsync({
     CompanyModule,
     AdminModule,
     UsersModule,
+    AdminAuthModule,
     PrismaModule,
   ],
   controllers: [AppController],
-  providers: [AppService, JobApplicationModule, UsersService],
+  providers: [AppService, JobApplicationModule, UsersService,AdminSeeder],
 })
-export class AppModule {}
+export class AppModule implements OnModuleInit {
+  constructor(private readonly adminSeeder: AdminSeeder) {}
+
+  async onModuleInit() {
+    await this.adminSeeder.seed();
+  }
+}
