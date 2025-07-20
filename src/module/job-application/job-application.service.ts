@@ -12,6 +12,24 @@ export class JobApplicationService {
 
   async create(createDto: CreateJobApplicationDto) {
     // Primeiro cria a localização
+
+    // bVerificar se a  cidade e o distrito existem
+    const city = await this.prisma.city.findUnique({
+      where: { id: createDto.location.cityId },
+    });
+    if (!city) {
+      throw new NotFoundException('City not found');
+    } 
+    const district = await this.prisma.district.findUnique({
+      where: { id: createDto.location.districtId },
+    });   
+    if (!district) {
+      throw new NotFoundException('District not found');
+    }
+    // Se ambos existem, cria a localização
+    // Se a localização já existir, você pode optar por reutilizá-la ou criar uma nova
+    // Aqui, vamos criar uma nova localização sempre  
+      
     const location = await this.prisma.location.create({
       data: {
         cityId: createDto.location.cityId,
