@@ -66,6 +66,21 @@ If you are looking for a cloud-based platform to deploy your NestJS application,
 ```bash
 $ npm install -g @nestjs/mau
 $ mau deploy
+
+```
+## Comandos Ut
+
+```bash
+$ npm install -g @nestjs/mau
+$ mau deploy
+
+make up        # Sobe tudo (NestJS, Postgres e pgAdmin)
+make logs      # Mostra logs do NestJS em tempo real
+make sh        # Entra dentro do container para rodar comandos
+make migrate   # Executa as migrations do Prisma
+make stop      # Para os containers sem deletar
+make down      # Derruba tudo
+
 ```
 
 With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
