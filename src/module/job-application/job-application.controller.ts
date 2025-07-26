@@ -37,8 +37,9 @@ export class JobApplicationController {
     description: 'Job application successfully created',
   })
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createJobApplicationDto: CreateJobApplicationDto) {
-    return this.jobApplicationService.create(createJobApplicationDto);
+ async create(@Body() createJobApplicationDto: CreateJobApplicationDto) {
+     const data = await  this.jobApplicationService.create(createJobApplicationDto);
+      return { message: 'Candidatura recebida com sucesso!' ,data};
   }
 
   @Get()
