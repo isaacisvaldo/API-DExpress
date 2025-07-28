@@ -37,8 +37,7 @@ export class JobApplicationService {
         street: createDto.location.street,
       },
     });
- console.log(createDto.birthDate)
-    // Depois cria a candidatura com o ID da localização
+
     return this.prisma.jobApplication.create({
       data: {
         fullName: createDto.fullName,

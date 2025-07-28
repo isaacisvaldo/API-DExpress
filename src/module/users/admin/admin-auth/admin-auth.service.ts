@@ -44,7 +44,7 @@ export class AdminAuthService {
     return {
       accessToken,
       refreshToken,
-      admin: {
+      user: {
         id: admin.id,
         name: admin.name,
         email: admin.email,
