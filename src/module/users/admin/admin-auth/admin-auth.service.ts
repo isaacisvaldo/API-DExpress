@@ -33,7 +33,7 @@ export class AdminAuthService {
 
     const accessToken = this.jwt.sign(payload, {
       secret: process.env.JWT_SECRET || 'supersecret',
-      expiresIn: '15m',
+      expiresIn: '1h',
     });
 
     const refreshToken = this.jwt.sign(payload, {
@@ -53,4 +53,43 @@ export class AdminAuthService {
       },
     };
   }
+
+async refreshAccessToken(refreshToken: string) {
+  try {
+    // Verifica se o refresh token é válido
+    const decoded = this.jwt.verify(refreshToken, {
+      secret: process.env.JWT_REFRESH_SECRET || 'superrefresh',
+    });
+
+    // Busca o admin pelo ID
+    const admin = await this.prisma.adminUser.findUnique({
+      where: { id: decoded.sub },
+      include: { permissions: true },
+    });
+
+    if (!admin) throw new UnauthorizedException('Admin não encontrado');
+
+    // Recria o payload com permissões
+    const permissionNames = admin.permissions.map((p) => p.name);
+
+    const payload = {
+      sub: admin.id,
+      email: admin.email,
+      role: admin.role,
+      permissions: permissionNames,
+    };
+
+    // Gera um novo access token
+    const accessToken = this.jwt.sign(payload, {
+      secret: process.env.JWT_SECRET || 'supersecret',
+      expiresIn: '1h',
+    });
+
+    return { accessToken };
+  } catch (error) {
+    throw new UnauthorizedException('Refresh token inválido ou expirado');
+  }
+}
+
+
 }

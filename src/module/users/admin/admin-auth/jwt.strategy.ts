@@ -11,9 +11,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       secretOrKey: process.env.JWT_SECRET || 'supersecret',
     });
   }
-
+  /**
+   * Valida o token JWT e extrai os dados do usuário.
+   * @param payload - Dados decodificados do token JWT.
+   * @returns Dados do usuário que serão adicionados ao objeto de requisição.
+   */
   async validate(payload: any) {
     // Retorna os dados que ficarão disponíveis em `req.user`
-    return { sub: payload.sub, email: payload.email, role: payload.role };
+    return { id: payload.sub, email: payload.email, role: payload.role };
   }
 }

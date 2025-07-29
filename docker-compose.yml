@@ -26,5 +26,16 @@ services:
     depends_on:
       - postgres
 
+  app:
+    build: .
+    container_name: dev_app
+    command: npm run start:dev
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dev_db?schema=public"
+
 volumes:
   postgres_data:
