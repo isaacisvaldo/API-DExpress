@@ -250,6 +250,7 @@ model User {
   // Cada User pode estar associado a UM perfil de cliente ou UM perfil de empresa
   clientProfileId  String?         @unique
   companyProfileId String?         @unique
+  avatar          String?
   clientProfile    ClientProfile?  @relation(fields: [clientProfileId], references: [id])
   companyProfile   CompanyProfile? @relation(fields: [companyProfileId], references: [id])
   createdAt        DateTime        @default(now())
@@ -266,10 +267,42 @@ model AdminUser {
   birthDate      DateTime
   email          String       @unique
   password       String
+  avatar         String?
   role           InternalRole
   permissions    Permission[] @relation("AdminPermissions")
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+
+  accountSettings AccountSettings[]
+  notificationSettings NotificationSettings[]
+  securitySettings SecuritySettings[]
+}
+
+model AccountSettings {
+  id       String  @id @default(uuid())
+  userId   String  @unique
+  status   String  @default("active")
+  plan     String  @default("Free")
+  visible  Boolean @default(true)
+  adminUser     AdminUser    @relation(fields: [userId], references: [id])
+}
+
+model SecuritySettings {
+  id                  String  @id @default(uuid())
+  userId              String  @unique
+  loginNotifications  Boolean @default(true)
+  lastPasswordChange  DateTime?
+  adminUser     AdminUser    @relation(fields: [userId], references: [id])
+}
+
+model NotificationSettings {
+  id        String  @id @default(uuid())
+  userId    String  @unique
+  email     Boolean @default(true)
+  push      Boolean @default(false)
+  marketing Boolean @default(true)
+  weekly    Boolean @default(true)
+   adminUser     AdminUser    @relation(fields: [userId], references: [id])
 }
 
 enum InternalRole {

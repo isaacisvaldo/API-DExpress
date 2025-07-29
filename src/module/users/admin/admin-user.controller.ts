@@ -1,9 +1,10 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { AdminUserService } from './admin-user.service';
 
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/common/secret/jwt-auth.guard';
 import { CreateAdminUserDto } from './dto/create-admin-user.dto.ts';
+
 
 @ApiTags('Admin')
 @Controller('admin')
@@ -17,4 +18,13 @@ export class AdminUserController {
     const creatorId = req.user.sub;
     return this.service.create(dto, creatorId);
   }
+  @Get('profile')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async getProfile(@Req() req: any) {
+    const userId = req.user.id; 
+    console.log("Fetching profile for user ID:", req.user);
+    return this.service.getProfileData(userId);
+  }
+  
 }

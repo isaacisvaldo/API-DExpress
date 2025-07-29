@@ -95,4 +95,42 @@ export class AdminUserService {
   });
 }
 
+async getProfileData(userId: string) {
+    if (!userId) {
+    throw new ForbiddenException('Usuário não autenticado ou ID inválido');
+  }
+  const admin = await this.prisma.adminUser.findUnique({
+    where: { id: userId },
+    include: { permissions: true, accountSettings: true, notificationSettings: true, securitySettings: true },
+  });
+
+  if (!admin) {
+    throw new ForbiddenException('Administrador não encontrado');
+  }
+  console.log(admin);
+  
+
+ // Monta a resposta (escondendo senha)
+    return {
+      id: admin.id,
+      name: admin.name,
+      numberphone: admin.numberphone,
+      isActive: admin.isActive,
+      identityNumber: admin.identityNumber,
+      gender: admin.gender,
+      birthDate: admin.birthDate,
+      email: admin.email,
+      avatar: admin.avatar,
+      role: admin.role,
+      createdAt: admin.createdAt,
+      updatedAt: admin.updatedAt,
+      // Relacionamentos
+      permissions: admin.permissions.map((p) => p.name),
+      accountSettings: admin.accountSettings,
+      notificationSettings: admin.notificationSettings,
+      securitySettings: admin.securitySettings,
+    };
+  }
+
+
 }
