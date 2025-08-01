@@ -6,35 +6,75 @@ import { PrismaService } from 'src/common/prisma/prisma.service';
 @Injectable()
 export class AuthService {
   constructor(private prisma: PrismaService, private jwtService: JwtService) {}
-
-  async validateUser(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+     async validateUser(email: string, password: string) {
+     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) throw new UnauthorizedException('Credenciais inválidas');
-
     return user;
   }
-
   async login(user: any) {
     const payload = { sub: user.id, email: user.email, type: user.type };
-    const token = this.jwtService.sign(payload);
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_SECRET,
+      expiresIn: process.env.JWT_EXPIRES_IN,
+    });
+
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
+    });
+
     // Busca dados do perfil
     let profile: any = null;
     if (user.type === 'CLIENT') {
-      profile = await this.prisma.clientProfile.findUnique({ where: { id: user.clientProfileId } });
+      profile = await this.prisma.clientProfile.findUnique({
+        where: { id: user.clientProfileId },
+      });
     } else if (user.type === 'COMPANY') {
-      profile = await this.prisma.companyProfile.findUnique({ where: { id: user.companyProfileId } });
+      profile = await this.prisma.companyProfile.findUnique({
+        where: { id: user.companyProfileId },
+      });
     }
+
     return {
-      access_token: token,
-      user: {
-        id: user.id,
+      accessToken,
+      refreshToken,
+      id: user.id,
+      email: user.email,
+      type: user.type,
+      profile,
+    };
+  }
+
+  async refreshAccessToken(refreshToken: string) {
+    try {
+      const decoded = this.jwtService.verify(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: decoded.sub },
+      });
+
+      if (!user) throw new UnauthorizedException('Usuário não encontrado');
+
+      const payload = {
+        sub: user.id,
         email: user.email,
         type: user.type,
-        profile,
-      },
-    };
+      };
+
+      const accessToken = this.jwtService.sign(payload, {
+        secret: process.env.JWT_SECRET,
+        expiresIn: process.env.JWT_EXPIRES_IN,
+      });
+
+      return { accessToken };
+    } catch (error) {
+      throw new UnauthorizedException('Refresh token inválido ou expirado');
+    }
   }
 }

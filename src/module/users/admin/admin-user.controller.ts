@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { AdminUserService } from './admin-user.service';
 
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -22,8 +22,12 @@ export class AdminUserController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async getProfile(@Req() req: any) {
-    const userId = req.user.id; 
-    console.log("Fetching profile for user ID:", req.user);
+    const userId = req.user.sub || req.user.id; // Ajuste para pegar o ID do usuário autenticado
+    if (!userId) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+   
+
     return this.service.getProfileData(userId);
   }
   

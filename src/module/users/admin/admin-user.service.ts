@@ -107,8 +107,7 @@ async getProfileData(userId: string) {
   if (!admin) {
     throw new ForbiddenException('Administrador não encontrado');
   }
-  console.log(admin);
-  
+ 
 
  // Monta a resposta (escondendo senha)
     return {

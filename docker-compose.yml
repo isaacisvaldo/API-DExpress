@@ -34,8 +34,8 @@ services:
       - "3000:3000"
     depends_on:
       - postgres
-    environment:
-      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dev_db?schema=public"
+    env_file:
+      - .env
 
 volumes:
   postgres_data:

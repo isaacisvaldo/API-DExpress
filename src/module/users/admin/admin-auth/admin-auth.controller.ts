@@ -1,8 +1,18 @@
-import { Body, Controller, Get, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminAuthService } from './admin-auth.service';
 import { ApiTags } from '@nestjs/swagger';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { JwtAuthGuard } from 'src/common/secret/jwt-auth.guard';
+import { Response } from 'express';
 
 @ApiTags('Admin Auth')
 @Controller('admin/auth')
@@ -10,20 +20,55 @@ export class AdminAuthController {
   constructor(private readonly service: AdminAuthService) {}
 
   @Post('login')
-  async login(@Body() dto: AdminLoginDto) {
-    return this.service.login(dto);
+  async login(
+    @Body() dto: AdminLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, refreshToken, user } = await this.service.login(dto);
+
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: false, // true em produção com HTTPS
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 1000, // 1 hora
+    });
+
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+    });
+
+    return { user };
   }
 
   @Post('refresh')
-  async refreshToken(@Body('refreshToken') refreshToken: string) {
-    // Verifica se o refresh token foi fornecido
-    
+  async refreshToken(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies?.refresh_token;
     if (!refreshToken) {
-      throw new UnauthorizedException('Token de atualização não fornecido');
+      throw new UnauthorizedException('Refresh token não fornecido');
     }
-    return this.service.refreshAccessToken(refreshToken);
+
+    const { accessToken } = await this.service.refreshAccessToken(refreshToken);
+
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 1000, // 1 hora
+    });
+
+    return { success: true };
   }
-    // NOVA ROTA: Valida se o usuário ainda está autenticado
+
+  @Post('logout')
+  async logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
+    return { message: 'Logout realizado com sucesso' };
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('validate')
   async validate(@Req() req: any) {
