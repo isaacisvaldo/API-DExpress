@@ -60,10 +60,6 @@ MailerModule.forRootAsync({
   controllers: [AppController, EmailController],
   providers: [AppService, JobApplicationModule, UsersService,AdminSeeder],
 })
-export class AppModule implements OnModuleInit {
-  constructor(private readonly adminSeeder: AdminSeeder) {}
+export class AppModule {
 
-  async onModuleInit() {
-    await this.adminSeeder.seed();
-  }
 }
