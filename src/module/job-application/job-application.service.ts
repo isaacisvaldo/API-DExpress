@@ -6,6 +6,7 @@ import { JobApplicationStatus } from './types/types';
 import { UpdateJobApplicationStatusDto } from './dto/update-status.dto';
 import { FilterJobApplicationDto } from './dto/filter-job-application.dto';
 
+
 @Injectable()
 export class JobApplicationService {
   constructor(private readonly prisma: PrismaService) {}
@@ -150,9 +151,30 @@ async findAll(filters: FilterJobApplicationDto) {
     });
   }
 async updateStatus(id: string, dto: UpdateJobApplicationStatusDto) {
+
+ console.log(`Updating status for job application with ID: ${id} to ${dto.status}`);
   return this.prisma.jobApplication.update({
     where: { id },
     data: { status: dto.status },
   });
 }
+
+async checkHasProfile(id: string): Promise<boolean> {
+  const application = await this.prisma.professional.findUnique({
+    where: { jobApplicationId: id },
+  
+  });
+  // Se encontrar um profissional associado, retorna true
+  // Caso contrário, retorna fals
+  if (!application) {
+    return false;
+  }
+  console.log(application," application found");
+  
+  
+  return !!application; 
+}
+  
+
+
 }

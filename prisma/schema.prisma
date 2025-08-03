@@ -104,6 +104,8 @@ model JobApplication {
   location               Location             @relation(fields: [locationId], references: [id])
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @updatedAt
+
+  professional Professional[]
 }
 
 model Professional {
@@ -111,9 +113,19 @@ model Professional {
   fullName               String // Nome completo do profissional
   email                  String                   @unique // Email do profissional (único)
   phoneNumber            String // Número de telefone
+  identityNumber         String? // Número de Identificação (BI, passaporte, etc.) (opcional)
   isAvailable            Boolean                  @default(false) // Indica se o profissional está disponível para ser contratado
   availabilityType       GeneralAvailability // Tipo de disponibilidade geral (tempo integral, parcial, etc.)
   experienceLevel        ExperienceLevel // Nível de experiência do profissional
+  jobApplicationId       String?                 @unique
+  jobApplication         JobApplication?          @relation(fields: [jobApplicationId], references: [id]) // Relação opcional com a candidatura de emprego
+  description            String? // Descrição do profissional (opcional)
+  expectedAvailability   DateTime? // Data esperada de disponibilidade (opcional)
+
+  hasCriminalRecord      Boolean                  @default(false) // Indica se o profissional tem registo criminal
+  hasMedicalCertificate  Boolean                  @default(false) // Indica se o profissional tem atestado médico
+  hasTrainingCertificate Boolean                  @default(false) // Indica se o profissional tem certificado de formação
+  hasPhoto               Boolean                  @default(false) // Indica
   specialties            Specialty[]              @relation("ProfessionalSpecialties") // Especialidades atribuídas ao profissional
   availability           Availability[] // Dias e horários disponíveis do profissional
   location               Location                 @relation(fields: [locationId], references: [id]) // Localização atual
