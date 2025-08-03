@@ -17,7 +17,7 @@ import { UsersModule } from './module/users/users.module';
 import { UsersService } from './module/users/users.service';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { AdminAuthModule } from './module/users/admin/admin-auth/admin-auth.module';
-import { AdminSeeder } from 'prisma/seeds/admin.seeder';
+
 import { EmailController } from './module/Email/email.controller';
 
 @Module({
@@ -58,7 +58,7 @@ MailerModule.forRootAsync({
     PrismaModule,
   ],
   controllers: [AppController, EmailController],
-  providers: [AppService, JobApplicationModule, UsersService,AdminSeeder],
+  providers: [AppService, JobApplicationModule, UsersService],
 })
 export class AppModule {
 

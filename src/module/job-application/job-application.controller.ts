@@ -98,8 +98,6 @@ updateStatus(
   @Body() dto: UpdateJobApplicationStatusDto,
 ) {
 
-  console.log(`Updating status for job application with ID: ${id} to ${dto.status}`);
-  
   return this.jobApplicationService.updateStatus(id, dto);
 }
 

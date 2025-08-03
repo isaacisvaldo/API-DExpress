@@ -131,7 +131,7 @@ model Professional {
   location               Location                 @relation(fields: [locationId], references: [id]) // Localização atual
   locationId             String // ID da localização
   profileImage           String?
-  gender Gender  @default(MALE)
+  gender Gender          @default(MALE)
   birthDate              DateTime                 @default(now()) // Data de nascimento
   maritalStatus          String                   @default("Não informado") // Estado civil
   hasChildren            Boolean                  @default(false) // Indica se o profissional tem filhos

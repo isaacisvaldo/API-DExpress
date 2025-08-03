@@ -151,8 +151,6 @@ async findAll(filters: FilterJobApplicationDto) {
     });
   }
 async updateStatus(id: string, dto: UpdateJobApplicationStatusDto) {
-
- console.log(`Updating status for job application with ID: ${id} to ${dto.status}`);
   return this.prisma.jobApplication.update({
     where: { id },
     data: { status: dto.status },
@@ -169,7 +167,7 @@ async checkHasProfile(id: string): Promise<boolean> {
   if (!application) {
     return false;
   }
-  console.log(application," application found");
+
   
   
   return !!application; 
