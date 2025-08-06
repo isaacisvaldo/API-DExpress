@@ -121,11 +121,9 @@ model Professional {
   jobApplication         JobApplication?          @relation(fields: [jobApplicationId], references: [id]) // Relação opcional com a candidatura de emprego
   description            String? // Descrição do profissional (opcional)
   expectedAvailability   DateTime? // Data esperada de disponibilidade (opcional)
-
   hasCriminalRecord      Boolean                  @default(false) // Indica se o profissional tem registo criminal
   hasMedicalCertificate  Boolean                  @default(false) // Indica se o profissional tem atestado médico
   hasTrainingCertificate Boolean                  @default(false) // Indica se o profissional tem certificado de formação
-  hasPhoto               Boolean                  @default(false) // Indica
   specialties            Specialty[]              @relation("ProfessionalSpecialties") // Especialidades atribuídas ao profissional
   availability           Availability[] // Dias e horários disponíveis do profissional
   location               Location                 @relation(fields: [locationId], references: [id]) // Localização atual

@@ -30,6 +30,10 @@ restart:
 logs:
 	docker compose logs -f $(APP)
 
+generate:
+	docker exec -it $(APP) npx prisma generate
+
+
 # Entrar no container do app (shell)
 sh:
 	docker exec -it $(APP) sh

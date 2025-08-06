@@ -24,8 +24,9 @@ export class AdminAuthService {
     const permissionNames = admin.permissions.map((p) => p.name);
 
     const payload = {
-      sub: admin.id,
+      id: admin.id,
       email: admin.email,
+      name:admin.name,
       role: admin.role,
       permissions: permissionNames,
     };
@@ -85,4 +86,6 @@ export class AdminAuthService {
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
   }
+
+
 }

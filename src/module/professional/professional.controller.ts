@@ -4,7 +4,9 @@ import {
   Body,
   Get,
   Query,
-  UseInterceptors,
+
+    UploadedFiles,
+  UseInterceptors
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,19 +20,31 @@ import { CreateProfessionalDto } from './dto/create-professional.dto';
 import { FilterProfessionalDto } from './dto/filter-professional.dto';
 import { TranslateProfessionalPipe } from 'src/common/pipes/translate-professional.pipe';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
-
+import { UploadService } from 'src/upload/upload.service';
+import {  FileInterceptor } from '@nestjs/platform-express';
 @ApiTags('PROFISSIONAL')
 @Controller('professionals')
 export class ProfessionalController {
-  constructor(private readonly professionalService: ProfessionalService) {}
+  constructor(private readonly professionalService: ProfessionalService,private readonly uploadService: UploadService) {}
 
   @Post()
   @ApiOperation({ summary: 'Cadastrar um novo profissional' })
   @ApiResponse({ status: 201, description: 'Profissional cadastrado com sucesso' })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiBody({ type: CreateProfessionalDto })
-  create(@Body() createProfessionalDto: CreateProfessionalDto) {
-    return this.professionalService.create(createProfessionalDto);
+@UseInterceptors(FileInterceptor('profileImage'))
+  async create(@Body() body: CreateProfessionalDto, @UploadedFiles() files: { photo?: Express.Multer.File[] },) {
+      let photoPath: string | null = null;
+
+    if (files?.photo?.length) {
+      const uploadResult = await this.uploadService.uploadFiles(files.photo);
+      photoPath = uploadResult[0].path;
+    }
+
+    return this.professionalService.create({
+      ...body,
+      profileImage: photoPath, // certifique-se de que o campo existe no modelo
+    });
   }
 
   @UseInterceptors(TranslateProfessionalPipe)

@@ -11,20 +11,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 if (!jwtSecret) {
   throw new Error('JWT_SECRET is not defined in environment variables');
 }
-
 super({
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
   ignoreExpiration: false,
   secretOrKey: jwtSecret,
 });
   }
-
   async validate(payload: any) {
     return {
       id: payload.sub,
       email: payload.email,
+      name:payload.name,
       role: payload.role,
-      permissions: payload.permissions, // caso envie
+      permissions: payload.permissions, 
     };
   }
 }

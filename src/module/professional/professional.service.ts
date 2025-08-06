@@ -18,39 +18,50 @@ async create(data: CreateProfessionalDto) {
     include: { location: true },
   });
 
-   if (!application) {
-      throw new NotFoundException('Candidatura não encontrada.');
-    }
+  if (!application) {
+    throw new NotFoundException('Candidatura não encontrada.');
+  }
 
-    if (application.status !== JobApplicationStatus.ACCEPTED) {
-      throw new BadRequestException('A candidatura ainda não foi aprovada.');
-    }
+  if (application.status !== JobApplicationStatus.ACCEPTED) {
+    throw new BadRequestException('A candidatura ainda não foi aprovada.');
+  }
 
   return await this.prisma.professional.create({
     data: {
-      fullName: application.fullName,
-      email: application.email,
-      phoneNumber: application.phoneNumber,
+      fullName: data.fullName,
+      email: data.email,
+      phoneNumber: data.phoneNumber,
+      identityNumber: data.identityNumber,
+      isAvailable: false,
       availabilityType: data.availabilityType,
       experienceLevel: data.experienceLevel,
-      birthDate: application.birthDate,
-      maritalStatus: application.maritalStatus,
-      hasChildren: application.hasChildren,
-      knownDiseases: application.knownDiseases,
-      desiredPosition: application.desiredPosition as any, 
-      expectedSalary: data.expectedSalary,
-      highestDegree: application.highestDegree,
-      courses: application.courses,
-      languages: application.languages,
-      skillsAndQualities: application.skillsAndQualities,
-      specialties: {
-        connect: data.specialtyIds.map((id) => ({ id })),
+      jobApplication: {
+        connect: {
+          id: data.applicationId,
+        },
       },
-    location: {
+      description: data.description,
+      expectedAvailability: data.expectedAvailability,
+      hasCriminalRecord: data.hasCriminalRecord,
+      hasMedicalCertificate: data.hasMedicalCertificate,
+      hasTrainingCertificate: data.hasTrainingCertificate,
+      location: {
         connect: {
           id: application.locationId,
         },
       },
+      profileImage: data.profileImage,
+      gender: data.gender,
+      birthDate: data.birthDate,
+      maritalStatus: data.maritalStatus,
+      hasChildren: data.hasChildren,
+      knownDiseases: data.knownDiseases,
+      desiredPosition: data.desiredPosition,
+      expectedSalary: data.expectedSalary,
+      highestDegree: data.highestDegree,
+      courses: data.courses,
+      languages: data.languages,
+      skillsAndQualities: data.skillsAndQualities,
     },
     include: {
       specialties: true,
