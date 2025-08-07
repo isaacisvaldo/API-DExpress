@@ -21,20 +21,7 @@ enum DocumentType {
   OTHER // Outro
 }
 
-enum GeneralAvailability {
-  FULL_TIME
-  PART_TIME
-  DAILY
-  WEEKENDS
-  ANY
-}
 
-enum ExperienceLevel {
-  LESS_THAN_1
-  ONE_TO_THREE
-  THREE_TO_FIVE
-  MORE_THAN_FIVE
-}
 
 enum Weekday {
   MONDAY
@@ -107,49 +94,66 @@ model JobApplication {
 }
 
 model Professional {
-  id                     String                   @id @default(uuid()) // Identificador único do profissional
-  fullName               String // Nome completo do profissional
-  email                  String                   @unique // Email do profissional (único)
+  id                     String                   @id @default(uuid())
+  fullName               String
+  email                  String                   @unique
   phoneNumber            String
-  identityNumber         String? // Número de Identificação (BI, passaporte, etc.) (opcional)
-  isAvailable            Boolean                  @default(false) // Indica se o profissional está disponível para ser contratado
+  identityNumber         String?
+  isAvailable            Boolean                  @default(false)
   description            String?
   expectedAvailability   DateTime?
-  hasCriminalRecord      Boolean                  @default(false) // Indica se o profissional tem registo criminal
-  hasMedicalCertificate  Boolean                  @default(false) // Indica se o profissional tem atestado médico
-  hasTrainingCertificate Boolean                  @default(false) // Indica se o profissional tem certificado de formação
+  hasCriminalRecord      Boolean                  @default(false)
+  hasMedicalCertificate  Boolean                  @default(false)
+  hasTrainingCertificate Boolean                  @default(false)
   locationId             String
   profileImage           String?
   genderId               String
   birthDate              DateTime                 @default(now())
   hasChildren            Boolean                  @default(false)
   knownDiseases          String?
-  expectedSalary         Int                      @default(0) // Pretensão salarial
+  expectedSalary         Int                      @default(0)
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
   jobApplicationId       String?                  @unique
-  desiredPosition        Gender                   @relation(fields: [desiredPositionId], references: [id])
-  availabilityType       GeneralAvailability
-  experienceLevel        ExperienceLevel
-  gender                 DesiredPosition          @relation(fields: [genderId], references: [id])
   desiredPositionId      String
+  availabilityTypeId     String                  
+  experienceLevelId      String                  
+
+  // Relações
+  desiredPosition        Gender                   @relation(fields: [desiredPositionId], references: [id])
+  gender                 DesiredPosition          @relation(fields: [genderId], references: [id])
   jobApplication         JobApplication?          @relation(fields: [jobApplicationId], references: [id])
+  location               Location                 @relation(fields: [locationId], references: [id])
+  availabilityType       GeneralAvailability      @relation(fields: [availabilityTypeId], references: [id])
+  experienceLevel        ExperienceLevel          @relation(fields: [experienceLevelId], references: [id])
+
   specialties            Specialty[]              @relation("ProfessionalSpecialties")
   availability           Availability[]
-  location               Location                 @relation(fields: [locationId], references: [id])
   Document               Document[]
   ProfessionalExperience ProfessionalExperience[]
-  // Relacionamento com Cursos (Muitos-para-Muitos)
   professionalCourses    ProfessionalCourses[]
-  // Relacionamento com Idiomas (Muitos-para-Muitos)
   professionalLanguages  ProfessionalLanguages[]
-  // Relacionamento com Habilidades (Muitos-para-Muitos)
   professionalSkills     ProfessionalSkills[]
   maritalStatus          MaritalStatus?           @relation(fields: [maritalStatusId], references: [id])
   maritalStatusId        String?
   highestDegree          HighestDegree?           @relation(fields: [highestDegreeId], references: [id])
   highestDegreeId        String?
 }
+
+model GeneralAvailability {
+  id            String        @id @default(uuid())
+  name  String   @unique
+  label         String
+  professionals Professional[]
+}
+
+model ExperienceLevel {
+  id            String        @id @default(uuid())
+  name String @unique
+  label         String
+  professionals Professional[]
+}
+
 
 model Gender {
   id            String         @id @default(uuid())

@@ -5,14 +5,14 @@ import { FilterProfessionalDto } from './dto/filter-professional.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 
-import { JobApplicationStatus, Prisma } from '@prisma/client'; 
+import { JobApplicationStatus, Prisma } from '@prisma/client';
 
 
 @Injectable()
 export class ProfessionalService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
- async create(data: CreateProfessionalDto) {
+  async create(data: CreateProfessionalDto) {
     const application = await this.prisma.jobApplication.findUnique({
       where: { id: data.applicationId },
       include: { location: true },
@@ -33,8 +33,16 @@ export class ProfessionalService {
         phoneNumber: data.phoneNumber,
         identityNumber: data.identityNumber,
         isAvailable: false,
-        availabilityType: data.availabilityType,
-        experienceLevel: data.experienceLevel,
+        availabilityType: {
+          connect: {
+            id: data.availabilityTypeId,
+          },
+        },
+        experienceLevel: {
+          connect: {
+            id: data.experienceLevelId,
+          },
+        },
         jobApplication: {
           connect: {
             id: data.applicationId,
@@ -47,7 +55,7 @@ export class ProfessionalService {
         hasTrainingCertificate: data.hasTrainingCertificate,
         location: {
           connect: {
-            id: data.locationId, // Usar data.locationId diretamente, se o Professional já o tiver
+            id: data.locationId, 
           },
         },
         profileImage: data.profileImage,
@@ -141,76 +149,76 @@ export class ProfessionalService {
   }
 
 
-async findByFilters(filters: FilterProfessionalDto) {
-  const {
-    name,
-    cityId,
-    districtId,
-    availabilityType,
-    experienceLevel,
-    specialtyId,
-    page = 1,
-    limit = 10,
-  } = filters;
+  async findByFilters(filters: FilterProfessionalDto) {
+    const {
+      name,
+      cityId,
+      districtId,
+      availabilityTypeId,
+      experienceLevelId,
+      specialtyId,
+      page = 1,
+      limit = 10,
+    } = filters;
 
-const specialtiesFilter = specialtyId
-  ? {
-      some: {
-        id: specialtyId,
-      },
-    }
-  : undefined;
-
-  const where: Prisma.ProfessionalWhereInput = {
-    fullName: name
+    const specialtiesFilter = specialtyId
       ? {
-          contains: name,
-          mode: Prisma.QueryMode.insensitive, 
-        }
-      : undefined,
-    availabilityType: availabilityType || undefined,
-    experienceLevel: experienceLevel || undefined,
-    location: {
-      cityId: cityId || undefined,
-      districtId: districtId || undefined,
-    },
-    specialties: specialtiesFilter,
-  };
+        some: {
+          id: specialtyId,
+        },
+      }
+      : undefined;
 
-  const [data, total] = await Promise.all([
-    this.prisma.professional.findMany({
-      where,
-      include: {
-        specialties: true,
-        availability: true,
-        location: {
-          include: {
-            city: true,
-            district: true,
+    const where: Prisma.ProfessionalWhereInput = {
+      fullName: name
+        ? {
+          contains: name,
+          mode: Prisma.QueryMode.insensitive,
+        }
+        : undefined,
+      availabilityTypeId: availabilityTypeId || undefined,
+      experienceLevelId: experienceLevelId || undefined,
+      location: {
+        cityId: cityId || undefined,
+        districtId: districtId || undefined,
+      },
+      specialties: specialtiesFilter,
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.professional.findMany({
+        where,
+        include: {
+          specialties: true,
+          availability: true,
+          location: {
+            include: {
+              city: true,
+              district: true,
+            },
           },
         },
-      },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: {
-        createdAt: 'desc',
-      },
-    }),
-    this.prisma.professional.count({ where }),
-  ]);
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.professional.count({ where }),
+    ]);
 
-  return {
-    data,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  };
-}
-
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 
 
-    async addAvailability(data: CreateAvailabilityDto) {
+
+  async addAvailability(data: CreateAvailabilityDto) {
     return this.prisma.availability.create({ data });
   }
 

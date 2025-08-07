@@ -1,6 +1,6 @@
 // src/company/dto/create-company-profile.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEmail } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsUUID } from 'class-validator';
 
 export class CreateCompanyProfileDto {
   @ApiProperty({ example: 'Minha Empresa LDA' })
@@ -31,4 +31,8 @@ export class CreateCompanyProfileDto {
   @ApiProperty({ example: 'Ativo' })
   @IsString()
   state: string;
+@ApiProperty({ example: 'uuid-do-tipo-disponibilidade', description: 'ID do sector' })
+  @IsUUID()
+  sectorId: string;
+ 
 }

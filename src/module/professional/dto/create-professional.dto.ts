@@ -32,13 +32,15 @@ export class CreateProfessionalDto {
   @IsString()
   identityNumber?: string;
 
-  @ApiProperty({ example: GeneralAvailability.FULL_TIME, enum: GeneralAvailability })
-  @IsEnum(GeneralAvailability)
-  availabilityType: GeneralAvailability;
+  // ✅ Agora é UUID do tipo relacionado (não Enum)
+  @ApiProperty({ example: 'uuid-do-tipo-disponibilidade', description: 'ID do tipo de disponibilidade' })
+  @IsUUID()
+  availabilityTypeId: string;
 
-  @ApiProperty({ example: ExperienceLevel.ONE_TO_THREE, enum: ExperienceLevel })
-  @IsEnum(ExperienceLevel)
-  experienceLevel: ExperienceLevel;
+  // ✅ Agora é UUID do tipo relacionado (não Enum)
+  @ApiProperty({ example: 'uuid-do-nivel-experiencia', description: 'ID do nível de experiência' })
+  @IsUUID()
+  experienceLevelId: string;
 
   @ApiProperty({ example: 'a2f648f5-6dcd-4e3a-bdd7-26b814d6f5b6', description: 'ID da candidatura aprovada', required: false })
   @IsOptional()

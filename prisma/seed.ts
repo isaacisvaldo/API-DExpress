@@ -1,8 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { districtNames } from './seeds/distritos.seed';
 import { specialtyNames } from './seeds/Specialty.seed';
-
-// NOVOS IMPORTS DE SEED
 import { desiredPositionData } from './seeds/DesiredPosition.seed';
 import { genderData } from './seeds/Gender.seed';
 import { maritalStatusData } from './seeds/MaritalStatus.seed';
@@ -10,6 +8,7 @@ import { highestDegreeData } from './seeds/HighestDegree.seed';
 import { courseData } from './seeds/Course.seed';
 import { languageData } from './seeds/Language.seed';
 import { skillData } from './seeds/Skill.seed';
+
 import * as bcrypt from 'bcrypt';
 import { sectorNames } from './seeds/Sector.seed';
 
@@ -40,7 +39,7 @@ async function main() {
     const specialty = await prisma.specialty.upsert({
       where: { name },
       update: {},
-      create: { name }, // Assumindo que Specialty agora tem 'label'
+      create: { name },
     });
     specialtyMap[name] = specialty.id;
   }
@@ -58,8 +57,7 @@ async function main() {
   }
   console.log('✅ Setores de empresa criados com sucesso!');
 
-
-  // --- NOVO SEED: POSIÇÕES DESEJADAS ---
+  // --- SEED: POSIÇÕES DESEJADAS ---
   const desiredPositionMap: Record<string, string> = {};
   for (const data of desiredPositionData) {
     const position = await prisma.desiredPosition.upsert({
@@ -71,7 +69,7 @@ async function main() {
   }
   console.log('✅ Posições Desejadas criadas com sucesso!');
 
-  // --- NOVO SEED: GÊNEROS ---
+  // --- SEED: GÊNEROS ---
   const genderMap: Record<string, string> = {};
   for (const data of genderData) {
     const gender = await prisma.gender.upsert({
@@ -83,7 +81,7 @@ async function main() {
   }
   console.log('✅ Gêneros criados com sucesso!');
 
-  // --- NOVO SEED: ESTADOS CIVIS ---
+  // --- SEED: ESTADOS CIVIS ---
   const maritalStatusMap: Record<string, string> = {};
   for (const data of maritalStatusData) {
     const status = await prisma.maritalStatus.upsert({
@@ -95,7 +93,7 @@ async function main() {
   }
   console.log('✅ Estados Civis criados com sucesso!');
 
-  // --- NOVO SEED: GRAUS ACADÊMICOS ---
+  // --- SEED: GRAUS ACADÊMICOS ---
   const highestDegreeMap: Record<string, string> = {};
   for (const data of highestDegreeData) {
     const degree = await prisma.highestDegree.upsert({
@@ -107,7 +105,7 @@ async function main() {
   }
   console.log('✅ Graus Acadêmicos criados com sucesso!');
 
-  // --- NOVO SEED: CURSOS ---
+  // --- SEED: CURSOS ---
   const courseMap: Record<string, string> = {};
   for (const data of courseData) {
     const course = await prisma.course.upsert({
@@ -119,7 +117,7 @@ async function main() {
   }
   console.log('✅ Cursos criados com sucesso!');
 
-  // --- NOVO SEED: IDIOMAS ---
+  // --- SEED: IDIOMAS ---
   const languageMap: Record<string, string> = {};
   for (const data of languageData) {
     const language = await prisma.language.upsert({
@@ -131,7 +129,7 @@ async function main() {
   }
   console.log('✅ Idiomas criados com sucesso!');
 
-  // --- NOVO SEED: HABILIDADES ---
+  // --- SEED: HABILIDADES ---
   const skillMap: Record<string, string> = {};
   for (const data of skillData) {
     const skill = await prisma.skill.upsert({
@@ -143,6 +141,29 @@ async function main() {
   }
   console.log('✅ Habilidades criadas com sucesso!');
 
+  // --- SEED: DISPONIBILIDADE GERAL ---
+  const availabilityMap: Record<string, string> = {};
+  for (const data of generalAvailabilityData) {
+    const availability = await prisma.generalAvailability.upsert({
+      where: { name: data.name },
+      update: {},
+      create: data,
+    });
+    availabilityMap[data.name] = availability.id;
+  }
+  console.log('✅ Tipos de disponibilidade geral criados com sucesso!');
+
+  // --- SEED: NÍVEIS DE EXPERIÊNCIA ---
+  const experienceLevelMap: Record<string, string> = {};
+  for (const data of experienceLevelData) {
+    const level = await prisma.experienceLevel.upsert({
+      where: { name: data.name },
+      update: {},
+      create: data,
+    });
+    experienceLevelMap[data.name] = level.id;
+  }
+  console.log('✅ Níveis de experiência criados com sucesso!');
 
   // --- SEED: ADMIN PADRÃO ---
   const defaultEmail = (process.env.DEFAULT_ADMIN_EMAIL || 'admin@dexpress.com').trim();
@@ -155,15 +176,12 @@ async function main() {
   if (!existingAdmin) {
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
-    // Você precisará garantir que os IDs de gênero e outros campos relacionados
-    // sejam passados corretamente aqui, usando os `Maps` criados acima.
-    // Exemplo: genderId: genderMap['MALE']
     await prisma.adminUser.create({
       data: {
         name: 'Super Admin',
         numberphone: '900000000',
         identityNumber: '0000000000',
-        genderId: genderMap['MALE'], 
+        genderId: genderMap['MALE'],
         birthDate: new Date('1990-01-01'),
         email: defaultEmail,
         password: hashedPassword,
@@ -182,7 +200,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error('❌ Erro na seed de Luanda:', e);
+    console.error('❌ Erro na seed:', e);
     process.exit(1);
   })
   .finally(async () => {

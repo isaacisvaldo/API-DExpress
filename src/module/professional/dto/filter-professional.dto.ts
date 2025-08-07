@@ -1,9 +1,8 @@
 // src/professional/dto/filter-professional.dto.ts
 import { IsOptional, IsString, IsEnum, IsArray, IsNumber, Min, IsUUID, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
-// Ensure these enums are correctly imported or defined if not from a DTO
-import { ExperienceLevel, GeneralAvailability } from '@prisma/client'; 
-import { ApiPropertyOptional } from '@nestjs/swagger';
+
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class FilterProfessionalDto {
   @ApiPropertyOptional({ description: 'Filter by professional\'s full name.' })
@@ -21,15 +20,15 @@ export class FilterProfessionalDto {
   @IsUUID()
   districtId?: string;
 
-  @ApiPropertyOptional({ enum: GeneralAvailability, description: 'Filter by general availability type.' })
-  @IsOptional()
-  @IsEnum(GeneralAvailability)
-  availabilityType?: GeneralAvailability;
+  // ✅ Agora é UUID do tipo relacionado (não Enum)
+  @ApiPropertyOptional({ example: 'uuid-do-tipo-disponibilidade', description: 'ID do tipo de disponibilidade' })
+  @IsUUID()
+  availabilityTypeId: string;
 
-  @ApiPropertyOptional({ enum: ExperienceLevel, description: 'Filter by professional\'s experience level.' })
-  @IsOptional()
-  @IsEnum(ExperienceLevel)
-  experienceLevel?: ExperienceLevel;
+  // ✅ Agora é UUID do tipo relacionado (não Enum)
+  @ApiPropertyOptional({ example: 'uuid-do-nivel-experiencia', description: 'ID do nível de experiência' })
+  @IsUUID()
+  experienceLevelId: string;
 
   @ApiPropertyOptional({ description: 'Filter by specialty ID.' })
   @IsOptional()

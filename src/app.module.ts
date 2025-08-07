@@ -26,6 +26,7 @@ import { CourseModule } from './module/shared/course/course.module';
 import { LanguageModule } from './module/shared/language/language.module';
 import { SkillModule } from './module/shared/skill/skill.module';
 import { AuthModule } from './module/shared/auth/auth.module';
+import { DashboardModule } from './module/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ MailerModule.forRootAsync({
     CourseModule,
     LanguageModule,
     SkillModule,
+    DashboardModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, JobApplicationModule, UsersService],
