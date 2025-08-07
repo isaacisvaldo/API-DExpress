@@ -20,7 +20,7 @@ import { CreateProfessionalDto } from './dto/create-professional.dto';
 import { FilterProfessionalDto } from './dto/filter-professional.dto';
 import { TranslateProfessionalPipe } from 'src/common/pipes/translate-professional.pipe';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
-import { UploadService } from 'src/upload/upload.service';
+import { UploadService } from 'src/module/shared/upload/upload.service';
 import {  FileInterceptor } from '@nestjs/platform-express';
 @ApiTags('PROFISSIONAL')
 @Controller('professionals')

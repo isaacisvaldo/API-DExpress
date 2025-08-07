@@ -53,7 +53,6 @@ seed:
 # ========================
 # Utilidades
 # ========================
-
 # Parar todos os containers
 stop:
 	docker compose stop

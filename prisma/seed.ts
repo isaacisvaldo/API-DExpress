@@ -1,19 +1,28 @@
 import { PrismaClient } from '@prisma/client';
 import { districtNames } from './seeds/distritos.seed';
 import { specialtyNames } from './seeds/Specialty.seed';
+
+// NOVOS IMPORTS DE SEED
+import { desiredPositionData } from './seeds/DesiredPosition.seed';
+import { genderData } from './seeds/Gender.seed';
+import { maritalStatusData } from './seeds/MaritalStatus.seed';
+import { highestDegreeData } from './seeds/HighestDegree.seed';
+import { courseData } from './seeds/Course.seed';
+import { languageData } from './seeds/Language.seed';
+import { skillData } from './seeds/Skill.seed';
 import * as bcrypt from 'bcrypt';
+import { sectorNames } from './seeds/Sector.seed';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Cria a cidade Luanda
+  // --- SEED: CIDADE E DISTRITOS ---
   const luanda = await prisma.city.upsert({
     where: { name: 'Luanda' },
     update: {},
     create: { name: 'Luanda' },
   });
 
-  // Cria os distritos de Luanda
   const districtMap: Record<string, string> = {};
   for (const name of districtNames) {
     const district = await prisma.district.upsert({
@@ -25,19 +34,117 @@ async function main() {
   }
   console.log('✅ Cidade "Luanda" e distritos criados com sucesso!');
 
-  // Cria as especialidades
+  // --- SEED: ESPECIALIDADES ---
   const specialtyMap: Record<string, string> = {};
   for (const name of specialtyNames) {
     const specialty = await prisma.specialty.upsert({
       where: { name },
       update: {},
-      create: { name },
+      create: { name }, // Assumindo que Specialty agora tem 'label'
     });
     specialtyMap[name] = specialty.id;
   }
   console.log('✅ Especialidades criadas com sucesso!');
 
-  // Cria o admin padrão
+  // --- SEED: SETORES DE EMPRESA ---
+  const sectorMap: Record<string, string> = {};
+  for (const name of sectorNames) {
+    const sector = await prisma.sector.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+    sectorMap[name] = sector.id;
+  }
+  console.log('✅ Setores de empresa criados com sucesso!');
+
+
+  // --- NOVO SEED: POSIÇÕES DESEJADAS ---
+  const desiredPositionMap: Record<string, string> = {};
+  for (const data of desiredPositionData) {
+    const position = await prisma.desiredPosition.upsert({
+      where: { name: data.name },
+      update: {},
+      create: data,
+    });
+    desiredPositionMap[data.name] = position.id;
+  }
+  console.log('✅ Posições Desejadas criadas com sucesso!');
+
+  // --- NOVO SEED: GÊNEROS ---
+  const genderMap: Record<string, string> = {};
+  for (const data of genderData) {
+    const gender = await prisma.gender.upsert({
+      where: { name: data.name },
+      update: {},
+      create: data,
+    });
+    genderMap[data.name] = gender.id;
+  }
+  console.log('✅ Gêneros criados com sucesso!');
+
+  // --- NOVO SEED: ESTADOS CIVIS ---
+  const maritalStatusMap: Record<string, string> = {};
+  for (const data of maritalStatusData) {
+    const status = await prisma.maritalStatus.upsert({
+      where: { name: data.name },
+      update: {},
+      create: data,
+    });
+    maritalStatusMap[data.name] = status.id;
+  }
+  console.log('✅ Estados Civis criados com sucesso!');
+
+  // --- NOVO SEED: GRAUS ACADÊMICOS ---
+  const highestDegreeMap: Record<string, string> = {};
+  for (const data of highestDegreeData) {
+    const degree = await prisma.highestDegree.upsert({
+      where: { name: data.name },
+      update: {},
+      create: data,
+    });
+    highestDegreeMap[data.name] = degree.id;
+  }
+  console.log('✅ Graus Acadêmicos criados com sucesso!');
+
+  // --- NOVO SEED: CURSOS ---
+  const courseMap: Record<string, string> = {};
+  for (const data of courseData) {
+    const course = await prisma.course.upsert({
+      where: { name: data.name },
+      update: {},
+      create: data,
+    });
+    courseMap[data.name] = course.id;
+  }
+  console.log('✅ Cursos criados com sucesso!');
+
+  // --- NOVO SEED: IDIOMAS ---
+  const languageMap: Record<string, string> = {};
+  for (const data of languageData) {
+    const language = await prisma.language.upsert({
+      where: { name: data.name },
+      update: {},
+      create: data,
+    });
+    languageMap[data.name] = language.id;
+  }
+  console.log('✅ Idiomas criados com sucesso!');
+
+  // --- NOVO SEED: HABILIDADES ---
+  const skillMap: Record<string, string> = {};
+  for (const data of skillData) {
+    const skill = await prisma.skill.upsert({
+      where: { name: data.name },
+      update: {},
+      create: data,
+    });
+    skillMap[data.name] = skill.id;
+  }
+  console.log('✅ Habilidades criadas com sucesso!');
+
+
+  // --- SEED: ADMIN PADRÃO ---
   const defaultEmail = (process.env.DEFAULT_ADMIN_EMAIL || 'admin@dexpress.com').trim();
   const defaultPassword = (process.env.DEFAULT_ADMIN_PASS || 'Admin123!').trim();
 
@@ -48,12 +155,15 @@ async function main() {
   if (!existingAdmin) {
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
+    // Você precisará garantir que os IDs de gênero e outros campos relacionados
+    // sejam passados corretamente aqui, usando os `Maps` criados acima.
+    // Exemplo: genderId: genderMap['MALE']
     await prisma.adminUser.create({
       data: {
         name: 'Super Admin',
         numberphone: '900000000',
         identityNumber: '0000000000',
-        gender: 'MALE',
+        genderId: genderMap['MALE'], 
         birthDate: new Date('1990-01-01'),
         email: defaultEmail,
         password: hashedPassword,

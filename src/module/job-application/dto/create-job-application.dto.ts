@@ -13,7 +13,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import { DesiredPosition } from 'src/common/enums/desired-position.enum'; // ajuste o path se necessário
 import { MaritalStatus } from 'src/common/enums/marital-status.enum';
-import { CreateLocationDto } from 'src/module/location/dto/create-location.dto';
+import { CreateLocationDto } from 'src/module/shared/location/dto/create-location.dto';
 
 export class CreateJobApplicationDto {
   @ApiProperty({ example: 'Isaac Bunga' })

@@ -10,28 +10,7 @@ import {
   IsDateString,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { DesiredPosition } from '@prisma/client';
-export enum GeneralAvailability {
-  FULL_TIME = 'FULL_TIME',
-  PART_TIME = 'PART_TIME',
-  DAILY = 'DAILY',
-  WEEKENDS = 'WEEKENDS',
-  ANY = 'ANY',
-}
-
-export enum ExperienceLevel {
-  LESS_THAN_1 = 'LESS_THAN_1',
-  ONE_TO_THREE = 'ONE_TO_THREE',
-  THREE_TO_FIVE = 'THREE_TO_FIVE',
-  MORE_THAN_FIVE = 'MORE_THAN_FIVE',
-}
-
-export enum Gender {
-  MALE = 'MALE',
-  FEMALE = 'FEMALE',
-
-}
-
+import { GeneralAvailability, ExperienceLevel } from '@prisma/client';
 
 
 
@@ -92,17 +71,19 @@ export class CreateProfessionalDto {
   @IsUUID()
   locationId: string;
 
-  @ApiProperty({ enum: Gender, example: Gender.FEMALE })
-  @IsEnum(Gender)
-  gender: Gender;
+  // ALTERAÇÃO: Agora é um ID (UUID)
+  @ApiProperty({ example: '76c1e5b4-2f33-4b90-8f83-874cbd02d9e5', description: 'ID do gênero' })
+  @IsUUID()
+  genderId: string;
 
   @ApiProperty({ example: '1998-05-10', description: 'Data de nascimento' })
   @IsDateString()
   birthDate: string;
 
-  @ApiProperty({ example: 'Solteira', description: 'Estado civil' })
-  @IsString()
-  maritalStatus: string;
+  // ALTERAÇÃO: Agora é um ID (UUID)
+  @ApiProperty({ example: '76c1e5b4-2f33-4b90-8f83-874cbd02d9e5', description: 'ID do estado civil' })
+  @IsUUID()
+  maritalStatusId: string;
 
   @ApiProperty({ example: true, description: 'Possui filhos?' })
   @IsBoolean()
@@ -113,43 +94,43 @@ export class CreateProfessionalDto {
   @IsString()
   knownDiseases?: string;
 
-  @ApiProperty({ enum: DesiredPosition, example: DesiredPosition.BABYSITTER })
-  @IsEnum(DesiredPosition)
-  desiredPosition: DesiredPosition;
+  // ALTERAÇÃO: Agora é um ID (UUID)
+  @ApiProperty({ example: '76c1e5b4-2f33-4b90-8f83-874cbd02d9e5', description: 'ID do cargo/posição desejada' })
+  @IsUUID()
+  desiredPositionId: string;
 
   @ApiProperty({ example: 50000, description: 'Pretensão salarial em Kz' })
   @IsNumber()
   expectedSalary: number;
 
-  @ApiProperty({ example: 'Ensino Médio Completo' })
-  @IsString()
-  highestDegree: string;
+  // ALTERAÇÃO: Agora é um ID (UUID)
+  @ApiProperty({ example: '76c1e5b4-2f33-4b90-8f83-874cbd02d9e5', description: 'ID do grau acadêmico mais elevado' })
+  @IsUUID()
+  highestDegreeId: string;
 
-  @ApiProperty({ example: ['Curso de primeiros socorros', 'Cuidadora de idosos'] })
+  // ALTERAÇÃO: IDs para tabelas de junção
+  @ApiProperty({ example: ['id-do-curso-1', 'id-do-curso-2'] })
   @IsArray()
-  @IsString({ each: true })
-  courses: string[];
+  @IsUUID('4', { each: true })
+  courseIds: string[];
 
-  @ApiProperty({ example: ['Português', 'Inglês'] })
+  // ALTERAÇÃO: IDs para tabelas de junção
+  @ApiProperty({ example: ['id-do-idioma-1', 'id-do-idioma-2'] })
   @IsArray()
-  @IsString({ each: true })
-  languages: string[];
+  @IsUUID('4', { each: true })
+  languageIds: string[];
 
-  @ApiProperty({ example: ['Organizada', 'Pontual', 'Boa comunicação'] })
+  // ALTERAÇÃO: IDs para tabelas de junção
+  @ApiProperty({ example: ['id-da-habilidade-1', 'id-da-habilidade-2'] })
   @IsArray()
-  @IsString({ each: true })
-  skillsAndQualities: string[];
+  @IsUUID('4', { each: true })
+  skillIds: string[];
 
-  @ApiProperty({
-    example: [
-      '23c1b774-2f33-4b90-8f83-874cbd02d9e5',
-      'd6c5f2de-35e6-4a25-996f-f0ec1584efbc',
-    ],
-    description: 'IDs das especialidades',
-  })
+  @ApiProperty({ example: ['23c1b774-2f33-4b90-8f83-874cbd02d9e5', 'd6c5f2de-35e6-4a25-996f-f0ec1584efbc'], description: 'IDs das especialidades' })
   @IsArray()
-  @IsString( { each: true })
+  @IsUUID('4', { each: true })
   specialtyIds: string[];
- @IsOptional()
-profileImage?: any;
+ 
+  @IsOptional()
+  profileImage?: any;
 }

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength, IsArray } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, IsArray, IsUUID, IsEnum } from 'class-validator';
 import { InternalRole } from '@prisma/client';
 
 export class CreateAdminUserDto {
@@ -17,9 +17,10 @@ export class CreateAdminUserDto {
   @IsNotEmpty()
   identityNumber: string;
 
-  @ApiProperty({ example: 'MALE', enum: ['MALE', 'FEMALE'], description: 'Gênero' })
-  @IsEnum(['MALE', 'FEMALE'])
-  gender: 'MALE' | 'FEMALE';
+  // ALTERAÇÃO AQUI: Agora é um ID (UUID)
+  @ApiProperty({ example: 'a1b2c3d4-e5f6-7890-1234-567890abcdef', description: 'ID do gênero (UUID)' })
+  @IsUUID()
+  genderId: string;
 
   @ApiProperty({ example: '1990-01-01', description: 'Data de nascimento (ISO)' })
   @IsNotEmpty()
