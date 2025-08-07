@@ -83,27 +83,24 @@ async findByFilters(filters: FilterProfessionalDto) {
     districtId,
     availabilityType,
     experienceLevel,
-    specialtyIds,
+    specialtyId,
     page = 1,
     limit = 10,
   } = filters;
 
-  const specialtiesFilter =
-    specialtyIds && specialtyIds.length > 0
-      ? {
-          some: {
-            id: Array.isArray(specialtyIds)
-              ? { in: specialtyIds }
-              : specialtyIds,
-          },
-        }
-      : undefined;
+const specialtiesFilter = specialtyId
+  ? {
+      some: {
+        id: specialtyId,
+      },
+    }
+  : undefined;
 
   const where: Prisma.ProfessionalWhereInput = {
     fullName: name
       ? {
           contains: name,
-          mode: Prisma.QueryMode.insensitive, // ✅ CORRETO
+          mode: Prisma.QueryMode.insensitive, 
         }
       : undefined,
     availabilityType: availabilityType || undefined,

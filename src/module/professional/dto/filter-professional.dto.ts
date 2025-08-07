@@ -30,10 +30,10 @@ export class FilterProfessionalDto {
   @IsEnum(ExperienceLevel)
   experienceLevel?: ExperienceLevel;
 
-  @ApiPropertyOptional({ type: [String] })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsArray()
-  specialtyIds?: string[];
+  @IsString()
+  specialtyId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
