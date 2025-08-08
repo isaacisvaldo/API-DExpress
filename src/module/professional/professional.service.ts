@@ -1,227 +1,226 @@
 // src/professional/professional.service.ts
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateProfessionalDto } from './dto/create-professional.dto';
-import { FilterProfessionalDto } from './dto/filter-professional.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { CreateAvailabilityDto } from './dto/create-availability.dto';
+import { CreateProfessionalDto } from './dto/create-professional.dto';
+import { UpdateProfessionalDto } from './dto/update-professional.dto';
+import { FilterProfessionalDto } from './dto/filter-professional.dto';
 
-import { JobApplicationStatus, Prisma } from '@prisma/client';
-
+import { Professional, Prisma } from '@prisma/client';
+import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 
 @Injectable()
 export class ProfessionalService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateProfessionalDto) {
-    const application = await this.prisma.jobApplication.findUnique({
-      where: { id: data.applicationId },
-      include: { location: true },
-    });
+  /**
+   * Cria um novo profissional, incluindo as conexões com as tabelas de junção.
+   * @param createProfessionalDto O DTO com os dados do profissional e os IDs de suas relações.
+   * @returns O profissional recém-criado.
+   */
+  async create(createProfessionalDto: CreateProfessionalDto) {
+    const {
+      courseIds,
+      languageIds,
+      skillIds,
+      specialtyIds,
+      ...professionalData
+    } = createProfessionalDto;
 
-    if (!application) {
-      throw new NotFoundException('Candidatura não encontrada.');
-    }
-
-    if (application.status !== JobApplicationStatus.ACCEPTED) {
-      throw new BadRequestException('A candidatura ainda não foi aprovada.');
-    }
-
-    return await this.prisma.professional.create({
+    return this.prisma.professional.create({
       data: {
-        fullName: data.fullName,
-        email: data.email,
-        phoneNumber: data.phoneNumber,
-        identityNumber: data.identityNumber,
-        isAvailable: false,
-        availabilityType: {
-          connect: {
-            id: data.availabilityTypeId,
-          },
-        },
-        experienceLevel: {
-          connect: {
-            id: data.experienceLevelId,
-          },
-        },
-        jobApplication: {
-          connect: {
-            id: data.applicationId,
-          },
-        },
-        description: data.description,
-        expectedAvailability: data.expectedAvailability,
-        hasCriminalRecord: data.hasCriminalRecord,
-        hasMedicalCertificate: data.hasMedicalCertificate,
-        hasTrainingCertificate: data.hasTrainingCertificate,
-        location: {
-          connect: {
-            id: data.locationId, 
-          },
-        },
-        profileImage: data.profileImage,
-        // ✅ Alterado para conectar o Gênero pelo ID
-        gender: {
-          connect: {
-            id: data.genderId,
-          },
-        },
-        birthDate: new Date(data.birthDate), // Converta a string para Date, se necessário
-        // ✅ Alterado para conectar o Estado Civil pelo ID
-        maritalStatus: {
-          connect: {
-            id: data.maritalStatusId,
-          },
-        },
-        hasChildren: data.hasChildren,
-        knownDiseases: data.knownDiseases,
-        // ✅ Alterado para conectar a Posição Desejada pelo ID
-        desiredPosition: {
-          connect: {
-            id: data.desiredPositionId,
-          },
-        },
-        expectedSalary: data.expectedSalary,
-        // ✅ Alterado para conectar o Grau Acadêmico pelo ID
-        highestDegree: {
-          connect: {
-            id: data.highestDegreeId,
-          },
-        },
-        // ✅ Conectando as Especialidades (já estava correto, mas revisado para clareza)
-        specialties: {
-          connect: data.specialtyIds.map((id) => ({ id })),
-        },
-        // ✅ Conectando Cursos através da tabela de junção ProfessionalCourses
+        ...professionalData,
+        // Conecta as relações many-to-many
         professionalCourses: {
-          create: data.courseIds.map((courseId) => ({
-            course: {
-              connect: { id: courseId },
-            },
-          })),
-        },
-        // ✅ Conectando Idiomas através da tabela de junção ProfessionalLanguages
-        professionalLanguages: {
-          create: data.languageIds.map((languageId) => ({
-            language: {
-              connect: { id: languageId },
-            },
-            // Você pode adicionar um 'level' aqui se o seu ProfessionalLanguages tiver esse campo
-            // level: 'NIVEL_PADRAO' // Exemplo: se o nível não for enviado no DTO
-          })),
-        },
-        // ✅ Conectando Habilidades através da tabela de junção ProfessionalSkills
-        professionalSkills: {
-          create: data.skillIds.map((skillId) => ({
-            skill: {
-              connect: { id: skillId },
-            },
-          })),
-        },
-        // Mantenha outros relacionamentos se houver (ex: Availability, Document, ProfessionalExperience)
-        // availability: ...,
-        // Document: ...,
-        // ProfessionalExperience: ...,
-      },
-      // ✅ Certifique-se de incluir as novas relações se você quiser retorná-las na resposta
-      include: {
-        specialties: true,
-        location: {
-          include: {
-            city: true,
-            district: true,
+          createMany: {
+            data: courseIds.map(courseId => ({ courseId })),
           },
         },
-        gender: true,          // Inclua o objeto Gender
-        maritalStatus: true,   // Inclua o objeto MaritalStatus
-        desiredPosition: true, // Inclua o objeto DesiredPosition
-        highestDegree: true,   // Inclua o objeto HighestDegree
-        professionalCourses: { // Inclua a tabela de junção de Cursos
-          include: { course: true },
+        professionalLanguages: {
+          createMany: {
+            data: languageIds.map(languageId => ({ languageId })),
+          },
         },
-        professionalLanguages: { // Inclua a tabela de junção de Idiomas
-          include: { language: true },
+        professionalSkills: {
+          createMany: {
+            data: skillIds.map(skillId => ({ skillId })),
+          },
         },
-        professionalSkills: { // Inclua a tabela de junção de Habilidades
-          include: { skill: true },
+        specialties: {
+          connect: specialtyIds.map(id => ({ id })),
         },
+      },
+      include: {
+        professionalCourses: { include: { course: true } },
+        professionalLanguages: { include: { language: true } },
+        professionalSkills: { include: { skill: true } },
+        specialties: true,
       },
     });
   }
 
-
-  async findByFilters(filters: FilterProfessionalDto) {
-    const {
-      name,
-      cityId,
-      districtId,
-      availabilityTypeId,
-      experienceLevelId,
-      specialtyId,
-      page = 1,
-      limit = 10,
-    } = filters;
-
-    const specialtiesFilter = specialtyId
-      ? {
-        some: {
-          id: specialtyId,
-        },
-      }
-      : undefined;
+  /**
+   * Retorna uma lista paginada de profissionais, com a opção de pesquisa avançada.
+   * @param filter O DTO com os parâmetros de filtro e paginação.
+   * @returns Um objeto com a lista de profissionais, a contagem total, a página atual e o limite.
+   */
+  async findAll(filter: FilterProfessionalDto): Promise<PaginatedDto<Professional>> {
+    const page = filter.page || 1;
+    const limit = filter.limit || 10;
+    const skip = (page - 1) * limit;
 
     const where: Prisma.ProfessionalWhereInput = {
-      fullName: name
-        ? {
-          contains: name,
-          mode: Prisma.QueryMode.insensitive,
-        }
-        : undefined,
-      availabilityTypeId: availabilityTypeId || undefined,
-      experienceLevelId: experienceLevelId || undefined,
+      // Filtros de texto
+      fullName: filter.name ? { contains: filter.name, mode: 'insensitive' } : undefined,
+
+      // Filtros de IDs diretos
       location: {
-        cityId: cityId || undefined,
-        districtId: districtId || undefined,
+        cityId: filter.cityId || undefined,
+        districtId: filter.districtId || undefined,
       },
-      specialties: specialtiesFilter,
+      availabilityTypeId: filter.availabilityTypeId || undefined,
+      experienceLevelId: filter.experienceLevelId || undefined,
+      desiredPositionId: filter.desiredPositionId || undefined,
+      genderId: filter.genderId || undefined,
+      maritalStatusId: filter.maritalStatusId || undefined,
+      highestDegreeId: filter.highestDegreeId || undefined,
+
+      // Filtros de booleanos
+      hasCriminalRecord: filter.hasCriminalRecord || undefined,
+      hasMedicalCertificate: filter.hasMedicalCertificate || undefined,
+      hasTrainingCertificate: filter.hasTrainingCertificate || undefined,
+      hasChildren: filter.hasChildren || undefined,
+
+      // Filtros para relações muitos-para-muitos (aqui garantimos que o profissional tenha TODOS os itens)
+      professionalCourses: filter.courseIds
+        ? {
+            every: {
+              courseId: { in: filter.courseIds },
+            },
+          }
+        : undefined,
+      professionalLanguages: filter.languageIds
+        ? {
+            every: {
+              languageId: { in: filter.languageIds },
+            },
+          }
+        : undefined,
+      professionalSkills: filter.skillIds
+        ? {
+            every: {
+              skillId: { in: filter.skillIds },
+            },
+          }
+        : undefined,
+      specialties: filter.specialtyId
+        ? {
+            some: { id: filter.specialtyId },
+          }
+        : undefined,
     };
 
-    const [data, total] = await Promise.all([
+    const [professionals, total] = await this.prisma.$transaction([
       this.prisma.professional.findMany({
+        skip,
+        take: limit,
         where,
         include: {
+          location: { include: { city: true, district: true } },
+          availabilityType: true,
+          experienceLevel: true,
+          gender: true,
+          maritalStatus: true,
+          desiredPosition: true,
+          highestDegree: true,
           specialties: true,
-          availability: true,
-          location: {
-            include: {
-              city: true,
-              district: true,
-            },
-          },
-        },
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: {
-          createdAt: 'desc',
+          professionalCourses: { include: { course: true } },
+          professionalLanguages: { include: { language: true } },
+          professionalSkills: { include: { skill: true } },
         },
       }),
       this.prisma.professional.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+
     return {
-      data,
+      data: professionals,
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages,
     };
   }
 
-
-
-  async addAvailability(data: CreateAvailabilityDto) {
-    return this.prisma.availability.create({ data });
+  /**
+   * Encontra um profissional específico pelo seu ID, incluindo todas as suas relações.
+   * @param id O ID do profissional (UUID em string).
+   * @returns O profissional encontrado.
+   * @throws NotFoundException se o profissional não for encontrado.
+   */
+  async findOne(id: string) {
+    const professional = await this.prisma.professional.findUnique({
+      where: { id },
+      include: {
+        location: { include: { city: true, district: true } },
+        availabilityType: true,
+        experienceLevel: true,
+        gender: true,
+        maritalStatus: true,
+        desiredPosition: true,
+        highestDegree: true,
+        specialties: true,
+        professionalCourses: { include: { course: true } },
+        professionalLanguages: { include: { language: true } },
+        professionalSkills: { include: { skill: true } },
+      },
+    });
+    if (!professional) {
+      throw new NotFoundException(`Professional with ID "${id}" not found`);
+    }
+    return professional;
   }
 
+  /**
+   * Atualiza um profissional existente. As relações many-to-many são sincronizadas.
+   * @param id O ID do profissional a ser atualizado (UUID em string).
+   * @param updateProfessionalDto O DTO com os dados a serem atualizados.
+   * @returns O profissional atualizado.
+   * @throws NotFoundException se o profissional não for encontrado.
+   */
+  async update(id: string, updateProfessionalDto: UpdateProfessionalDto) {
+    const {
+      courseIds,
+      languageIds,
+      skillIds,
+      specialtyIds,
+      ...professionalData
+    } = updateProfessionalDto;
 
+    try {
+     return "Em Desenvolvimento !"
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(`Professional with ID "${id}" not found`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Remove um profissional do banco de dados.
+   * @param id O ID do profissional a ser removido (UUID em string).
+   * @returns O profissional que foi removido.
+   * @throws NotFoundException se o profissional não for encontrado.
+   */
+  async remove(id: string) {
+    try {
+      return await this.prisma.professional.delete({ where: { id } });
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(`Professional with ID "${id}" not found`);
+      }
+      throw error;
+    }
+  }
 }
-

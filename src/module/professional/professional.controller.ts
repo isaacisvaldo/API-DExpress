@@ -1,66 +1,52 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Get,
-  Query,
-
-    UploadedFiles,
-  UseInterceptors
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBody,
-} from '@nestjs/swagger';
-
+// src/professional/professional.controller.ts
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ProfessionalService } from './professional.service';
 import { CreateProfessionalDto } from './dto/create-professional.dto';
+import { UpdateProfessionalDto } from './dto/update-professional.dto';
 import { FilterProfessionalDto } from './dto/filter-professional.dto';
-import { TranslateProfessionalPipe } from 'src/common/pipes/translate-professional.pipe';
-import { CreateAvailabilityDto } from './dto/create-availability.dto';
-import { UploadService } from 'src/module/shared/upload/upload.service';
-import {  FileInterceptor } from '@nestjs/platform-express';
-@ApiTags('PROFISSIONAL')
+import { ApiTags, ApiOperation, ApiResponse, ApiOkResponse, ApiBody } from '@nestjs/swagger';
+import { Professional } from '@prisma/client';
+import { PaginatedDto } from 'src/common/pagination/paginated.dto';
+
+@ApiTags('Professionals')
 @Controller('professionals')
 export class ProfessionalController {
-  constructor(private readonly professionalService: ProfessionalService,private readonly uploadService: UploadService) {}
+  constructor(private readonly professionalService: ProfessionalService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Cadastrar um novo profissional' })
-  @ApiResponse({ status: 201, description: 'Profissional cadastrado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiOperation({ summary: 'Cria um novo profissional' })
+  @ApiResponse({ status: 201, description: 'Profissional criado com sucesso.' })
   @ApiBody({ type: CreateProfessionalDto })
-@UseInterceptors(FileInterceptor('profileImage'))
-  async create(@Body() body: CreateProfessionalDto, @UploadedFiles() files: { photo?: Express.Multer.File[] },) {
-      let photoPath: string | null = null;
-
-    if (files?.photo?.length) {
-      const uploadResult = await this.uploadService.uploadFiles(files.photo);
-      photoPath = uploadResult[0].path;
-    }
-
-    return this.professionalService.create({
-      ...body,
-      profileImage: photoPath, // certifique-se de que o campo existe no modelo
-    });
+  create(@Body() createProfessionalDto: CreateProfessionalDto) {
+    return this.professionalService.create(createProfessionalDto);
   }
 
-  @UseInterceptors(TranslateProfessionalPipe)
   @Get()
-  @ApiOperation({ summary: 'Buscar profissionais com filtros' })
-  @ApiResponse({ status: 200, description: 'Lista de profissionais filtrados' })
-  findByFilters(@Query() filters: FilterProfessionalDto) {
-    return this.professionalService.findByFilters(filters);
+  @ApiOperation({ summary: 'Lista todos os profissionais com paginação e filtros' })
+  @ApiOkResponse({ type: PaginatedDto, description: 'Lista de profissionais paginada e filtrada.' })
+  findAll(@Query() filter: FilterProfessionalDto): Promise<PaginatedDto<Professional>> {
+    return this.professionalService.findAll(filter);
   }
 
-  @Post('availability')
-  @ApiOperation({ summary: 'Adicionar disponibilidade ao profissional' })
-  @ApiResponse({ status: 201, description: 'Disponibilidade adicionada com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos para disponibilidade' })
-  @ApiBody({ type: CreateAvailabilityDto })
-  addAvailability(@Body() dto: CreateAvailabilityDto) {
-    return this.professionalService.addAvailability(dto);
+  @Get(':id')
+  @ApiOperation({ summary: 'Busca um profissional pelo ID' })
+  @ApiOkResponse({ description: 'Profissional encontrado.' })
+  findOne(@Param('id') id: string) {
+    return this.professionalService.findOne(id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Atualiza um profissional' })
+  @ApiOkResponse({ description: 'Profissional atualizado com sucesso.' })
+  @ApiBody({ type: UpdateProfessionalDto })
+  update(@Param('id') id: string, @Body() updateProfessionalDto: UpdateProfessionalDto) {
+    return this.professionalService.update(id, updateProfessionalDto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Remove um profissional' })
+  @ApiOkResponse({ description: 'Profissional removido com sucesso.' })
+  remove(@Param('id') id: string) {
+    return this.professionalService.remove(id);
   }
 }

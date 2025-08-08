@@ -27,6 +27,9 @@ import { LanguageModule } from './module/shared/language/language.module';
 import { SkillModule } from './module/shared/skill/skill.module';
 import { AuthModule } from './module/shared/auth/auth.module';
 import { DashboardModule } from './module/dashboard/dashboard.module';
+import { GeneralAvailabilityModule } from './module/shared/general-availability/general-availability.module';
+import { ExperienceLevelModule } from './module/shared/experience-level/experience-level.module';
+import { SectorModule } from './module/shared/sector/sector.module';
 
 @Module({
   imports: [
@@ -72,6 +75,9 @@ MailerModule.forRootAsync({
     LanguageModule,
     SkillModule,
     DashboardModule,
+    GeneralAvailabilityModule,
+    ExperienceLevelModule,
+    SectorModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, JobApplicationModule, UsersService],
