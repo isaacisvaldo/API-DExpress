@@ -7,8 +7,8 @@ import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { Profile } from '@prisma/client';
 import { ProfileService } from './profiles.service';
 
-@ApiTags('profiles')
-@Controller('profiles')
+@ApiTags('Roles')
+@Controller('roles')
 export class ProfilesController {
   constructor(private readonly profilesService: ProfileService) {}
 
