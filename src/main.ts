@@ -1,14 +1,22 @@
-import { NestFactory } from '@nestjs/core';
+ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
-const app = await NestFactory.create(AppModule, { cors: true });
-  // Adiciona prefixo global para todas as rotas
+  const app = await NestFactory.create(AppModule);
+
+  // Prefixo global
   app.setGlobalPrefix('api');
-  app.enableCors();
-  // Swagger
+  // Middleware para cookies
+  app.use(cookieParser());
+  // CORS com suporte a cookies
+   app.enableCors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173', // <- coloque sua URL do frontend aqui
+    credentials: true,
+  })
+  // Swagger config
   const config = new DocumentBuilder()
     .setTitle('DExpress')
     .setDescription('Plataforma online que conecta famílias a profissionais domésticos qualificados em Luanda')
@@ -17,15 +25,14 @@ const app = await NestFactory.create(AppModule, { cors: true });
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
-
-  // Ativa a validação automática nos DTOs
+  // Validação global
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Remove campos que não estão no DTO
-      forbidNonWhitelisted: true, // Lança erro se um campo extra for enviado
-      transform: true, // Converte os tipos automaticamente (ex: string para Date)
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
-  await app.listen(process.env.PORT ?? 3000);
+await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

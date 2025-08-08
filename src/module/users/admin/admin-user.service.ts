@@ -32,7 +32,7 @@ export class AdminUserService {
         name: dto.name,
         numberphone: dto.numberphone,
         identityNumber: dto.identityNumber,
-        gender: dto.gender,
+        genderId: dto.genderId,
         birthDate: dto.birthDate,
         email: dto.email,
         password: hashedPassword,
@@ -41,7 +41,7 @@ export class AdminUserService {
           ? { connectOrCreate: dto.permissions.map((p) => ({ where: { name: p }, create: { name: p } })) }
           : undefined,
       },
-      include: { permissions: true },
+      include: { permissions: true ,gender:true},
     });
 
     // Envia email
@@ -107,8 +107,7 @@ async getProfileData(userId: string) {
   if (!admin) {
     throw new ForbiddenException('Administrador não encontrado');
   }
-  console.log(admin);
-  
+ 
 
  // Monta a resposta (escondendo senha)
     return {
@@ -117,7 +116,6 @@ async getProfileData(userId: string) {
       numberphone: admin.numberphone,
       isActive: admin.isActive,
       identityNumber: admin.identityNumber,
-      gender: admin.gender,
       birthDate: admin.birthDate,
       email: admin.email,
       avatar: admin.avatar,

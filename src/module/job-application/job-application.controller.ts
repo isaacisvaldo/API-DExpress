@@ -97,6 +97,22 @@ updateStatus(
   @Param('id') id: string,
   @Body() dto: UpdateJobApplicationStatusDto,
 ) {
+
   return this.jobApplicationService.updateStatus(id, dto);
 }
+
+  @Get(':id/has-profile')
+  @ApiOperation({ summary: 'Check if a job application has an associated profile' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns true if the job application has a profile, false otherwise',
+  })
+  async checkHasProfile(@Param('id') id: string) {
+    const hasProfile = await this.jobApplicationService.checkHasProfile(id);
+    return {
+      hasProfile: hasProfile,
+      message: hasProfile ? 'Profile exists for this job application.' : 'No profile found for this job application.',
+    };
+  }
 }

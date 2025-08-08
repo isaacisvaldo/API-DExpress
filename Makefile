@@ -1,5 +1,5 @@
 # Nome do serviço principal (NestJS)
-APP=app
+APP=dev_app
 
 
 # Arquivos do Docker Compose (já com -f incluído)
@@ -30,6 +30,10 @@ restart:
 logs:
 	docker compose logs -f $(APP)
 
+generate:
+	docker exec -it $(APP) npx prisma generate
+
+
 # Entrar no container do app (shell)
 sh:
 	docker exec -it $(APP) sh
@@ -49,7 +53,6 @@ seed:
 # ========================
 # Utilidades
 # ========================
-
 # Parar todos os containers
 stop:
 	docker compose stop
