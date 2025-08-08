@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, IsArray, IsUUID, IsEnum, IsBoolean } from 'class-validator';
-import { InternalRole } from '@prisma/client';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, IsUUID, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateAdminUserDto {
@@ -37,13 +36,11 @@ export class CreateAdminUserDto {
   @MinLength(6)
   password?: string;
 
-  @ApiProperty({ enum: InternalRole, example: InternalRole.OPERATIONS_MANAGER, description: 'Cargo interno' })
-  @IsEnum(InternalRole)
-  role: InternalRole;
 
-  @ApiPropertyOptional({ type: [String], example: ['CREATE_USER', 'VIEW_REPORTS'], description: 'Lista de permissões (opcional)' })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  permissions?: string[];
+  @ApiProperty({ example: 'a1b2c3d4-e5f6-7890-1234-567890abcdef', description: 'ID do perfil a ser associado ao administrador' })
+  @IsUUID()
+  @IsNotEmpty()
+  profileId: string; // ✅ Campo para o ID do perfil, agora obrigatório
+
+  // ❌ O campo 'permissions' foi removido
 }

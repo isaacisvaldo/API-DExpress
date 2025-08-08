@@ -6,9 +6,9 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { AdminUser, Prisma } from '@prisma/client';
 import { FindAllDto } from 'src/common/pagination/find-all.dto';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
-import { CreateAdminUserDto } from './dto/create-admin-user.dto.ts';
-import { UpdateAdminUserDto } from './dto/update-admin.dto';
 
+import { UpdateAdminUserDto } from './dto/update-admin.dto';
+import { CreateAdminUserDto } from './dto/create-admin-user.dto.ts';
 
 @Injectable()
 export class AdminUserService {
@@ -24,7 +24,7 @@ export class AdminUserService {
   async create(dto: CreateAdminUserDto, creatorId: string) {
     // 1. Verifica se quem cria é um Admin Geral
     const creator = await this.prisma.adminUser.findUnique({ where: { id: creatorId } });
-    if (!creator || creator.role !== 'GENERAL_ADMIN') {
+    if (!creator) {
       throw new ForbiddenException('Somente o Admin Geral pode criar novos administradores.');
     }
 
@@ -36,11 +36,17 @@ export class AdminUserService {
       throw new ForbiddenException('Administrador já existe com este email ou número de identidade.');
     }
 
-    // 3. Gera senha segura caso não tenha sido fornecida
+    // 3. Verifica se o perfil existe
+    const profile = await this.prisma.profile.findUnique({ where: { id: dto.profileId } });
+    if (!profile) {
+      throw new NotFoundException(`Perfil com o ID "${dto.profileId}" não encontrado.`);
+    }
+
+    // 4. Gera senha segura caso não tenha sido fornecida
     const password = dto.password || Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4. Cria o novo admin na base de dados
+    // 5. Cria o novo admin na base de dados, conectando ao perfil
     const newAdmin = await this.prisma.adminUser.create({
       data: {
         name: dto.name,
@@ -50,15 +56,16 @@ export class AdminUserService {
         birthDate: dto.birthDate,
         email: dto.email,
         password: hashedPassword,
-        role: dto.role,
-        permissions: dto.permissions
-          ? { connectOrCreate: dto.permissions.map((p) => ({ where: { name: p }, create: { name: p } })) }
-          : undefined,
+       
+        profileId: dto.profileId,
       },
-      include: { permissions: true ,gender:true},
+      include: { 
+        profile: { include: { permissions: true } }, 
+        gender: true 
+      },
     });
 
-    // 5. Envia o email de boas-vindas
+    // 6. Envia o email de boas-vindas
     await this.sendAdminWelcomeEmail(newAdmin.email, password);
     return { message: 'Administrador criado com sucesso', id: newAdmin.id };
   }
@@ -76,36 +83,26 @@ export class AdminUserService {
     const admin = await this.prisma.adminUser.findUnique({
       where: { id: userId },
       include: { 
-        permissions: true, 
-        accountSettings: true, 
+        profile: {
+          
+          include: {
+            permissions: true,
+          },
+        },
+        
+      
         notificationSettings: true, 
         securitySettings: true,
+        gender: true, 
       },
     });
 
     if (!admin) {
       throw new ForbiddenException('Administrador não encontrado');
     }
- 
+
     // Monta a resposta (escondendo a senha por segurança)
-    return {
-      id: admin.id,
-      name: admin.name,
-      numberphone: admin.numberphone,
-      isActive: admin.isActive,
-      identityNumber: admin.identityNumber,
-      birthDate: admin.birthDate,
-      email: admin.email,
-      avatar: admin.avatar,
-      role: admin.role,
-      createdAt: admin.createdAt,
-      updatedAt: admin.updatedAt,
-      // Relacionamentos
-      permissions: admin.permissions.map((p) => p.name),
-      accountSettings: admin.accountSettings,
-      notificationSettings: admin.notificationSettings,
-      securitySettings: admin.securitySettings,
-    };
+  return admin
   }
   
   /**
@@ -134,6 +131,7 @@ export class AdminUserService {
         where,
         include: {
           gender: true,
+          profile: true, // ✅ Incluindo o perfil
         },
       }),
       this.prisma.adminUser.count({ where }),
@@ -160,6 +158,7 @@ export class AdminUserService {
       where: { id },
       include: {
         gender: true,
+        profile: true, // ✅ Incluindo o perfil
       },
     });
 
@@ -176,16 +175,30 @@ export class AdminUserService {
    * @returns O objeto do utilizador atualizado.
    */
   async update(id: string, updateAdminUserDto: UpdateAdminUserDto): Promise<AdminUser> {
-    // ✅ Filtra todas as propriedades que têm o valor undefined do DTO
-    const data = Object.fromEntries(
-      Object.entries(updateAdminUserDto).filter(([_, value]) => value !== undefined)
-    );
+    const updateData: Prisma.AdminUserUpdateInput = {};
 
+    // 1. Processa todos os campos do DTO, exceto profileId
+    for (const [key, value] of Object.entries(updateAdminUserDto)) {
+        if (value !== undefined && key !== 'profileId') {
+            updateData[key as keyof Prisma.AdminUserUpdateInput] = value;
+        }
+    }
+
+    // 2. Se o profileId estiver presente no DTO, trate-o separadamente
+    if (updateAdminUserDto.profileId) {
+        // Verifica se o perfil existe
+        const profile = await this.prisma.profile.findUnique({ where: { id: updateAdminUserDto.profileId } });
+        if (!profile) {
+            throw new NotFoundException(`Perfil com o ID "${updateAdminUserDto.profileId}" não encontrado.`);
+        }
+        // ✅ Corrigido: Conecta o perfil usando a sintaxe de relação
+        updateData.profile = { connect: { id: updateAdminUserDto.profileId } };
+    }
+    
     try {
       return await this.prisma.adminUser.update({
         where: { id },
-        // ✅ Agora, apenas as propriedades com valor serão enviadas
-        data: data,
+        data: updateData,
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
@@ -195,7 +208,6 @@ export class AdminUserService {
     }
   }
 
-
   /**
    * Remove um utilizador administrador.
    * @param id ID do utilizador.
@@ -203,6 +215,14 @@ export class AdminUserService {
    */
   async remove(id: string): Promise<AdminUser> {
     try {
+
+       const adminDelete=  await this.prisma.adminUser.findUnique({
+        where:{
+          id
+        }
+        
+       })
+       if(adminDelete?.isRoot) throw new NotFoundException(`Utilizador "${adminDelete?.name}" Nãoo pode ser Deletado`);
       return await this.prisma.adminUser.delete({
         where: { id },
       });

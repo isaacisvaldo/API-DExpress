@@ -30,6 +30,8 @@ import { DashboardModule } from './module/dashboard/dashboard.module';
 import { GeneralAvailabilityModule } from './module/shared/general-availability/general-availability.module';
 import { ExperienceLevelModule } from './module/shared/experience-level/experience-level.module';
 import { SectorModule } from './module/shared/sector/sector.module';
+import { PermissionsModule } from './module/shared/permissions/permissions.module';
+import { ProfilesModule } from './module/shared/profiles/profiles.module';
 
 @Module({
   imports: [
@@ -78,6 +80,8 @@ MailerModule.forRootAsync({
     GeneralAvailabilityModule,
     ExperienceLevelModule,
     SectorModule,
+    PermissionsModule,
+    ProfilesModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, JobApplicationModule, UsersService],

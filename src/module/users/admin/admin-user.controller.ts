@@ -16,11 +16,11 @@ import { UpdateAdminUserDto } from './dto/update-admin.dto';
 export class AdminUserController {
   constructor(private readonly service: AdminUserService) {}
 
-  @Post()
+  @Post("users")
   @ApiOperation({ summary: 'Cria um novo utilizador administrador' })
   @ApiResponse({ status: 201, description: 'Utilizador criado com sucesso' })
   async createAdmin(@Body() dto: CreateAdminUserDto, @Req() req: any) {
-    const creatorId = req.user.sub;
+    const creatorId = req.user.sub || req.user.id;
     return this.service.create(dto, creatorId);
   }
 
@@ -58,7 +58,7 @@ export class AdminUserController {
     return this.service.update(id, updateAdminUserDto);
   }
 
-  @Delete(':id')
+  @Delete('users/:id')
   @ApiOperation({ summary: 'Deleta um utilizador administrador' })
   @ApiOkResponse({ description: 'Utilizador deletado com sucesso' })
   @ApiResponse({ status: 404, description: 'Utilizador não encontrado' })

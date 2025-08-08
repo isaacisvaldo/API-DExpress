@@ -8,13 +8,22 @@ import { highestDegreeData } from './seeds/HighestDegree.seed';
 import { courseData } from './seeds/Course.seed';
 import { languageData } from './seeds/Language.seed';
 import { skillData } from './seeds/Skill.seed';
+import { sectorNames } from './seeds/Sector.seed';
+import { generalAvailabilityData } from './seeds/general-availability.seed';
+import { experienceLevelData } from './seeds/experincial-level.seed';
+import { internalPermissions } from './seeds/permission.seed';
 
 import * as bcrypt from 'bcrypt';
-import { sectorNames } from './seeds/Sector.seed';
+import { profilesData } from './seeds/perfil.seed';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  console.log(`Iniciando o seeding...`);
+
+  // --- SEED: DADOS GERAIS (CIDADE, ESPECIALIDADES, etc.) ---
+  // O código para estas seções permanece inalterado.
+  // ... (o seu código original para city, district, specialty, etc. vai aqui)
   // --- SEED: CIDADE E DISTRITOS ---
   const luanda = await prisma.city.upsert({
     where: { name: 'Luanda' },
@@ -139,7 +148,7 @@ async function main() {
     });
     skillMap[data.name] = skill.id;
   }
-  console.log('✅ Habilidades criadas com sucesso!');
+  console.log('✅ Habilidades criados com sucesso!');
 
   // --- SEED: DISPONIBILIDADE GERAL ---
   const availabilityMap: Record<string, string> = {};
@@ -165,37 +174,87 @@ async function main() {
   }
   console.log('✅ Níveis de experiência criados com sucesso!');
 
-  // --- SEED: ADMIN PADRÃO ---
-  const defaultEmail = (process.env.DEFAULT_ADMIN_EMAIL || 'admin@dexpress.com').trim();
-  const defaultPassword = (process.env.DEFAULT_ADMIN_PASS || 'Admin123!').trim();
+  // --- SEED: PERMISSÕES ---
+  // ✅ Usando o array internalPermissions fornecido
+  const permissionMap: Record<string, string> = {};
+  for (const permissionData of internalPermissions) {
+    const permission = await prisma.permission.upsert({
+      where: { name: permissionData.name },
+      update: { label: permissionData.label }, // Atualiza o label se já existir
+      create: { name: permissionData.name, label: permissionData.label },
+    });
+    permissionMap[permissionData.name] = permission.id;
+  }
+  console.log('✅ Permissões criadas com sucesso!');
 
-  const existingAdmin = await prisma.adminUser.findUnique({
-    where: { email: defaultEmail },
-  });
 
-  if (!existingAdmin) {
-    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-
-    await prisma.adminUser.create({
-      data: {
-        name: 'Super Admin',
-        numberphone: '900000000',
-        identityNumber: '0000000000',
-        genderId: genderMap['MALE'],
-        birthDate: new Date('1990-01-01'),
-        email: defaultEmail,
-        password: hashedPassword,
-        role: 'GENERAL_ADMIN',
+  // --- SEED: PERFIS ---
+  // ✅ Nova seção para criar os perfis e associá-los às permissões
+  for (const profileData of profilesData) {
+    await prisma.profile.upsert({
+      where: { name: profileData.name },
+      update: {
+        label: profileData.label,
+        description: profileData.description,
         permissions: {
-          create: [{ name: 'FULL_ACCESS' }],
+          set: profileData.permissions.map(pName => ({ name: pName })),
+        },
+      },
+      create: {
+        name: profileData.name,
+        label: profileData.label,
+        description: profileData.description,
+        permissions: {
+          connect: profileData.permissions.map(pName => ({ name: pName })),
         },
       },
     });
-
-    console.log(`✅ Admin padrão criado: ${defaultEmail} / ${defaultPassword}`);
-  } else {
-    console.log(`ℹ️ Admin padrão já existe: ${defaultEmail}`);
   }
+  console.log('✅ Perfis de administrador criados e associados às permissões!');
+
+  // --- SEED: ADMIN PADRÃO ---
+
+// --- SEED: ADMIN PADRÃO ---
+const defaultEmail = (process.env.DEFAULT_ADMIN_EMAIL || 'admin@dexpress.com').trim();
+const defaultPassword = (process.env.DEFAULT_ADMIN_PASS || 'Admin123!').trim();
+
+const existingAdmin = await prisma.adminUser.findUnique({
+  where: { email: defaultEmail },
+});
+
+if (!existingAdmin) {
+  const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+  
+  // ✅ 1. Encontrar o perfil de 'GENERAL_ADMIN' pelo nome
+  const generalAdminProfile = await prisma.profile.findUnique({
+    where: { name: 'GENERAL_ADMIN' },
+    select: { id: true } // Apenas selecione o ID para otimizar
+  });
+  
+  // Se o perfil não for encontrado, é um erro crítico
+  if (!generalAdminProfile) {
+    throw new Error("Perfil 'GENERAL_ADMIN' não encontrado. Certifique-se de que a seção de perfis é executada primeiro.");
+  }
+  
+  // ✅ 2. Criar o AdminUser e conectar o perfil usando o profileId
+  await prisma.adminUser.create({
+    data: {
+      name: 'Isaac Bunga',
+      numberphone: '900000000',
+      identityNumber: '0000000000',
+      genderId: genderMap['MALE'],
+      birthDate: new Date('1990-01-01'),
+      email: defaultEmail,
+      password: hashedPassword,
+      isRoot:true,
+      profileId: generalAdminProfile.id, 
+    },
+  });
+
+  console.log(`✅ Admin padrão criado com perfil 'GENERAL_ADMIN': ${defaultEmail} / ${defaultPassword}`);
+} else {
+  console.log(`ℹ️ Admin padrão já existe: ${defaultEmail}`);
+}
 }
 
 main()

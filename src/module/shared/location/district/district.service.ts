@@ -86,6 +86,13 @@ export class DistrictService {
     }
     return district;
   }
+    async findByCity(id: string) {
+    const district = await this.prisma.district.findMany({ where: { cityId:id } });
+    if (!district) {
+      throw new NotFoundException(`District with ID "${id}" not found`);
+    }
+    return district;
+  }
 
   /**
    * Atualiza um distrito existente.

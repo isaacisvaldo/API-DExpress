@@ -12,22 +12,31 @@ export class AdminAuthService {
   ) {}
 
   async login(dto: AdminLoginDto) {
+    // ✅ Incluir o perfil e as permissões dentro dele
     const admin = await this.prisma.adminUser.findUnique({
       where: { email: dto.email },
-      include: { permissions: true },
+      include: {
+        profile: {
+          include: {
+            permissions: true,
+          },
+        },
+      },
     });
 
     if (!admin || !(await bcrypt.compare(dto.password, admin.password))) {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
-    const permissionNames = admin.permissions.map((p) => p.name);
+    // ✅ Mapear as permissões a partir do perfil
+    const permissionNames = admin.profile?.permissions.map((p) => p.name) || [];
+  
 
     const payload = {
       id: admin.id,
       email: admin.email,
-      name:admin.name,
-      role: admin.role,
+      name: admin.name,
+      role: admin.profile.label,
       permissions: permissionNames,
     };
 
@@ -48,7 +57,7 @@ export class AdminAuthService {
         id: admin.id,
         name: admin.name,
         email: admin.email,
-        role: admin.role,
+        role: admin.profile.label,
         permissions: permissionNames,
       },
     };
@@ -60,19 +69,27 @@ export class AdminAuthService {
         secret: process.env.JWT_REFRESH_SECRET,
       });
 
+      // ✅ Incluir o perfil e as permissões dentro dele
       const admin = await this.prisma.adminUser.findUnique({
         where: { id: decoded.sub },
-        include: { permissions: true },
+        include: {
+          profile: {
+            include: {
+              permissions: true,
+            },
+          },
+        },
       });
 
       if (!admin) throw new UnauthorizedException('Admin não encontrado');
 
-      const permissionNames = admin.permissions.map((p) => p.name);
+      // ✅ Mapear as permissões a partir do perfil
+      const permissionNames = admin.profile?.permissions.map((p) => p.name) || [];
 
       const payload = {
         sub: admin.id,
         email: admin.email,
-        role: admin.role,
+        role: admin.profile.label,
         permissions: permissionNames,
       };
 
@@ -86,6 +103,4 @@ export class AdminAuthService {
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
   }
-
-
 }
