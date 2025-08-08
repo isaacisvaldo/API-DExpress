@@ -26,8 +26,8 @@ export class LanguageService {
    * @returns Um objeto com a lista de idiomas, a contagem total, a página atual e o limite.
    */
   async findAll(query: FindAllDto): Promise<PaginatedDto<Language>> {
-    const page = parseInt(query.page as string, 10) || 1;
-    const limit = parseInt(query.pageSize as string, 10) || 10;
+    const page = query.page || 1;
+    const limit = query.limit || 10;
     const skip = (page - 1) * limit;
 
     const where: Prisma.LanguageWhereInput = query.search

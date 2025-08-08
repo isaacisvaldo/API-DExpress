@@ -27,8 +27,8 @@ export class SpecialtyService {
    * @returns Um objeto com a lista de especialidades, a contagem total, a página atual e o limite.
    */
   async findAll(query: FindAllDto): Promise<PaginatedDto<Specialty>> {
-    const page = parseInt(query.page as string, 10) || 1;
-    const limit = parseInt(query.pageSize as string, 10) || 10;
+    const page = query.page || 1;
+    const limit = query.limit || 10;
     const skip = (page - 1) * limit;
 
     const where: Prisma.SpecialtyWhereInput = query.search

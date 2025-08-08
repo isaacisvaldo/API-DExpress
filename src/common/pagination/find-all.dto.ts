@@ -1,36 +1,23 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsNumberString, IsString } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsNumber, Min, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
 
-/**
- * DTO genérico para parâmetros de paginação e pesquisa.
- * Use este DTO para `@Query()` nos seus controladores.
- */
 export class FindAllDto {
-  @ApiProperty({
-    description: 'O número da página a ser retornada. Inicia em 1.',
-    example: 1,
-    required: false,
-    default: 1
-  })
+  @ApiPropertyOptional({ description: 'Página atual para a paginação (inicia em 1).', minimum: 1, default: 1 })
   @IsOptional()
-  @IsNumberString()
-  page?: string = '1';
+  @Type(() => Number) // ✅ Importante: converte a string da query para number
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
 
-  @ApiProperty({
-    description: 'O número de itens por página.',
-    example: 10,
-    required: false,
-    default: 10
-  })
+  @ApiPropertyOptional({ description: 'Número de itens por página.', minimum: 1, default: 10 })
   @IsOptional()
-  @IsNumberString()
-  pageSize?: string = '10';
+  @Type(() => Number) // ✅ Importante: converte a string da query para number
+  @IsNumber()
+  @Min(1)
+  limit?: number = 10;
 
-  @ApiProperty({
-    description: 'Termo de pesquisa para filtrar os resultados.',
-    example: 'primeiros socorros',
-    required: false
-  })
+  @ApiPropertyOptional({ description: 'Termo de pesquisa para filtros de texto.' })
   @IsOptional()
   @IsString()
   search?: string;
