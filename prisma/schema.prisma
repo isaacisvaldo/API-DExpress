@@ -401,7 +401,7 @@ model AdminUser {
   accountSettings      AccountSettings[]
   notificationSettings NotificationSettings[]
   securitySettings     SecuritySettings[]
-  genderId             String?
+ genderId             String
 }
 
 model AccountSettings {

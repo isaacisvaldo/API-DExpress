@@ -36,10 +36,23 @@ export class DistrictService {
         }
       : {};
 
-    const [districts, total] = await this.prisma.$transaction([
-      this.prisma.district.findMany({ skip, take: limit, where }),
-      this.prisma.district.count({ where }),
-    ]);
+ const [districts, total] = await this.prisma.$transaction([
+  this.prisma.district.findMany({ 
+    skip, 
+    take: limit, 
+    where,
+ 
+    include: {
+      city: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  }),
+  this.prisma.district.count({ where }),
+]);
 
     const totalPages = Math.ceil(total / limit);
 
