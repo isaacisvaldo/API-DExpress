@@ -1,4 +1,4 @@
-const experienceLevelData = [
+ export const experienceLevelData = [
   { name: 'INTERN', label: 'Estagiário' },
   { name: 'JUNIOR', label: 'Júnior' },
   { name: 'MID_LEVEL', label: 'Pleno' },

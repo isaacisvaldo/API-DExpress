@@ -36,10 +36,23 @@ export class DistrictService {
         }
       : {};
 
-    const [districts, total] = await this.prisma.$transaction([
-      this.prisma.district.findMany({ skip, take: limit, where }),
-      this.prisma.district.count({ where }),
-    ]);
+ const [districts, total] = await this.prisma.$transaction([
+  this.prisma.district.findMany({ 
+    skip, 
+    take: limit, 
+    where,
+ 
+    include: {
+      city: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  }),
+  this.prisma.district.count({ where }),
+]);
 
     const totalPages = Math.ceil(total / limit);
 
@@ -68,6 +81,13 @@ export class DistrictService {
    */
   async findOne(id: string) {
     const district = await this.prisma.district.findUnique({ where: { id } });
+    if (!district) {
+      throw new NotFoundException(`District with ID "${id}" not found`);
+    }
+    return district;
+  }
+    async findByCity(id: string) {
+    const district = await this.prisma.district.findMany({ where: { cityId:id } });
     if (!district) {
       throw new NotFoundException(`District with ID "${id}" not found`);
     }

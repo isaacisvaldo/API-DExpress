@@ -394,24 +394,39 @@ model AdminUser {
   email                String                 @unique
   password             String
   avatar               String?
-  role                 InternalRole
-  permissions          Permission[]           @relation("AdminPermissions")
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
-  accountSettings      AccountSettings[]
   notificationSettings NotificationSettings[]
   securitySettings     SecuritySettings[]
   genderId             String?
+  profile              Profile             @relation(fields: [profileId], references: [id])
+  profileId            String              // A restrição '@unique' foi removida
+  address              String              @default("---")
+  isRoot               Boolean                @default(false)
 }
 
-model AccountSettings {
-  id        String    @id @default(uuid())
-  userId    String    @unique
-  status    String    @default("active")
-  plan      String    @default("Free")
-  visible   Boolean   @default(true)
-  adminUser AdminUser @relation(fields: [userId], references: [id])
+// Novo modelo Profile para gerir perfis de utilizador.
+// Este modelo armazena as permissões e é associado a um AdminUser.
+model Profile {
+  id          String         @id @default(uuid())
+  name        String         @unique
+  label       String
+  description String?
+  adminUser   AdminUser[]    // Agora um array, pois pode ter vários usuários
+  permissions Permission[]   @relation("ProfilePermissions")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 }
+// O model Permission agora tem uma relação many-to-many com o novo modelo Profile.
+model Permission {
+  id      String    @id @default(uuid())
+  name    String    @unique
+  label   String    @default("---")
+  profiles Profile[] @relation("ProfilePermissions")
+}
+
+
+
 
 model SecuritySettings {
   id                 String    @id @default(uuid())
@@ -431,18 +446,5 @@ model NotificationSettings {
   adminUser AdminUser @relation(fields: [userId], references: [id])
 }
 
-enum InternalRole {
-  GENERAL_ADMIN
-  OPERATIONS_MANAGER
-  HR_COORDINATOR
-  QUALITY_SUPERVISOR
-  CUSTOMER_ASSISTANT
-  FINANCIAL
-  INTERNAL_AUDITOR
-}
 
-model Permission {
-  id     String      @id @default(uuid())
-  name   String      @unique
-  admins AdminUser[] @relation("AdminPermissions")
-}
+

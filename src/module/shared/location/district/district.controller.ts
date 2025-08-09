@@ -41,6 +41,12 @@ export class DistrictController {
   findOne(@Param('id') id: string) {
     return this.districtService.findOne(id);
   }
+  @Get(':id/city')
+  @ApiOperation({ summary: 'Busca um distrito pelo ID da Cidade' })
+  @ApiOkResponse({ description: 'Distrito encontrado.' })
+  findByCity(@Param('id') id: string) {
+    return this.districtService.findByCity(id);
+  }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Atualiza um distrito' })
