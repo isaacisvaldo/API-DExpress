@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import { districtNames } from './seeds/distritos.seed';
-import { specialtyNames } from './seeds/Specialty.seed';
 import { desiredPositionData } from './seeds/DesiredPosition.seed';
 import { genderData } from './seeds/Gender.seed';
 import { maritalStatusData } from './seeds/MaritalStatus.seed';
@@ -42,17 +41,6 @@ async function main() {
   }
   console.log('✅ Cidade "Luanda" e distritos criados com sucesso!');
 
-  // --- SEED: ESPECIALIDADES ---
-  const specialtyMap: Record<string, string> = {};
-  for (const name of specialtyNames) {
-    const specialty = await prisma.specialty.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-    specialtyMap[name] = specialty.id;
-  }
-  console.log('✅ Especialidades criadas com sucesso!');
 
   // --- SEED: SETORES DE EMPRESA ---
   const sectorMap: Record<string, string> = {};

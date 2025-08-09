@@ -1,8 +1,7 @@
 // src/professional/dto/filter-professional.dto.ts
-import { IsOptional, IsString, IsEnum, IsArray, IsNumber, Min, IsUUID, IsBoolean } from 'class-validator';
+import { IsOptional, IsString, IsNumber, Min, IsUUID, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
-
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class FilterProfessionalDto {
   @ApiPropertyOptional({ description: 'Filter by professional\'s full name.' })
@@ -19,23 +18,21 @@ export class FilterProfessionalDto {
   @IsOptional()
   @IsUUID()
   districtId?: string;
-
-  // ✅ Agora é UUID do tipo relacionado (não Enum)
+  
   @ApiPropertyOptional({ example: 'uuid-do-tipo-disponibilidade', description: 'ID do tipo de disponibilidade' })
+  @IsOptional()
   @IsUUID()
-  availabilityTypeId: string;
+  availabilityTypeId?: string;
 
-  // ✅ Agora é UUID do tipo relacionado (não Enum)
   @ApiPropertyOptional({ example: 'uuid-do-nivel-experiencia', description: 'ID do nível de experiência' })
+  @IsOptional()
   @IsUUID()
-  experienceLevelId: string;
+  experienceLevelId?: string;
 
   @ApiPropertyOptional({ description: 'Filter by specialty ID.' })
   @IsOptional()
   @IsUUID()
   specialtyId?: string;
-
-  // --- NEW FILTERS ---
 
   @ApiPropertyOptional({ description: 'Filter by desired position ID.' })
   @IsOptional()
@@ -57,25 +54,25 @@ export class FilterProfessionalDto {
   @IsUUID()
   highestDegreeId?: string;
 
-  @ApiPropertyOptional({ type: [String], description: 'Filter by course IDs (professional must have ALL specified courses).' })
+  @ApiPropertyOptional({ description: 'Filter by a specific course ID.' })
   @IsOptional()
-  @IsArray()
-  @IsUUID('4', { each: true })
-  courseIds?: string[];
+  @IsUUID()
+  courseId?: string; // Alterado para um único ID
 
-  @ApiPropertyOptional({ type: [String], description: 'Filter by language IDs (professional must speak ALL specified languages).' })
+  @ApiPropertyOptional({ description: 'Filter by a specific language ID.' })
   @IsOptional()
-  @IsArray()
-  @IsUUID('4', { each: true })
-  languageIds?: string[];
+  @IsUUID()
+  languageId?: string; // Alterado para um único ID
 
-  @ApiPropertyOptional({ type: [String], description: 'Filter by skill IDs (professional must possess ALL specified skills).' })
+  @ApiPropertyOptional({ description: 'Filter by a specific skill ID.' })
   @IsOptional()
-  @IsArray()
-  @IsUUID('4', { each: true })
-  skillIds?: string[];
+  @IsUUID()
+  skillId?: string; // Alterado para um único ID
 
-  // --- PAGINATION & OTHER FILTERS (Existing) ---
+  @ApiPropertyOptional({ description: 'Filter by a specific experience ID.' })
+  @IsOptional()
+  @IsUUID()
+  experienceId?: string; // Adicionado para filtrar experiência por um único ID
 
   @ApiPropertyOptional({ description: 'Page number for pagination (starts at 1).', minimum: 1, default: 1 })
   @IsOptional()
@@ -91,11 +88,10 @@ export class FilterProfessionalDto {
   @Min(1)
   limit?: number = 10;
 
-  // You might also want to add filters for boolean flags if needed:
   @ApiPropertyOptional({ description: 'Filter by criminal record status.' })
   @IsOptional()
   @IsBoolean()
-  @Type(() => Boolean) // Important for boolean query params
+  @Type(() => Boolean)
   hasCriminalRecord?: boolean;
 
   @ApiPropertyOptional({ description: 'Filter by medical certificate status.' })

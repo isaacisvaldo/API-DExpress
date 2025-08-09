@@ -1,38 +1,54 @@
-// src/job-application/dto/filter-job-application.dto.ts
+
+
 import { IsOptional, IsString, IsEnum, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { JobApplicationStatus } from '../types/types';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { JobApplicationStatus } from '@prisma/client'; 
 
 export class FilterJobApplicationDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Filtra por nome completo do candidato' })
   @IsOptional()
   @IsString()
   fullName?: string;
 
-  @ApiPropertyOptional({ enum: JobApplicationStatus })
+  @ApiPropertyOptional({ enum: JobApplicationStatus, description: 'Filtra pelo status da candidatura' })
   @IsOptional()
   @IsEnum(JobApplicationStatus)
   status?: JobApplicationStatus;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Filtra por ID da cidade' })
   @IsOptional()
   @IsString()
   cityId?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Filtra por ID do distrito' })
   @IsOptional()
   @IsString()
   districtId?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Filtra por ID da posição desejada' })
+  @IsOptional()
+  @IsString()
+  desiredPositionId?: string;
+
+  @ApiPropertyOptional({ description: 'Filtra por ID do gênero' })
+  @IsOptional()
+  @IsString()
+  genderId?: string;
+
+  @ApiPropertyOptional({ description: 'Filtra por ID do grau de escolaridade mais elevado' })
+  @IsOptional()
+  @IsString()
+  highestDegreeId?: string;
+
+  @ApiPropertyOptional({ description: 'Número da página', minimum: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Limite de resultados por página', minimum: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
