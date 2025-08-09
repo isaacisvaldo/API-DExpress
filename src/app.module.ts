@@ -8,7 +8,6 @@ import { CityModule } from './module/shared/location/city/city.module';
 import { DistrictModule } from './module/shared/location/district/district.module';
 import { LocationModule } from './module/shared/location/location.module';
 import { ProfessionalModule } from './module/professional/professional.module';
-import { SpecialtyModule } from './module/shared/specialties/specialties.module';
 import { AdminModule } from './module/users/admin/admin.module';
 import { ClientsModule } from './module/users/clients/clients.module';
 import { CompanyModule } from './module/users/company/company.module';
@@ -60,7 +59,7 @@ MailerModule.forRootAsync({
     CityModule,
     DistrictModule,
     LocationModule,
-    SpecialtyModule,
+   
     JobApplicationModule,
     ClientsModule,
     CompanyModule,

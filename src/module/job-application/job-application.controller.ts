@@ -15,7 +15,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiParam,
-  ApiBody
+  ApiBody,
 } from '@nestjs/swagger';
 
 import { JobApplicationService } from './job-application.service';
@@ -37,22 +37,20 @@ export class JobApplicationController {
     description: 'Job application successfully created',
   })
   @HttpCode(HttpStatus.CREATED)
- async create(@Body() createJobApplicationDto: CreateJobApplicationDto) {
-     const data = await  this.jobApplicationService.create(createJobApplicationDto);
-      return { message: 'Candidatura recebida com sucesso!' ,data};
+  async create(@Body() createJobApplicationDto: CreateJobApplicationDto) {
+    const data = await this.jobApplicationService.create(createJobApplicationDto);
+    return { message: 'Candidatura recebida com sucesso!', data };
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all job applications' })
+  @ApiOperation({ summary: 'List job applications with filters and pagination' })
   @ApiResponse({
     status: 200,
     description: 'List of job applications',
   })
-@Get()
-@ApiOperation({ summary: 'Listar candidaturas com filtros e paginação' })
-async findAll(@Query() query: FilterJobApplicationDto) {
-  return this.jobApplicationService.findAll(query);
-}
+  async findAll(@Query() query: FilterJobApplicationDto) {
+    return this.jobApplicationService.findAll(query);
+  }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific job application by ID' })
@@ -64,22 +62,7 @@ async findAll(@Query() query: FilterJobApplicationDto) {
   findOne(@Param('id') id: string) {
     return this.jobApplicationService.findOne(id);
   }
- /*
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update a job application by ID' })
-  @ApiParam({ name: 'id', type: String })
-  @ApiResponse({
-    status: 200,
-    description: 'Job application updated successfully',
-  })
- 
-  update(
-    @Param('id') id: string,
-    @Body() updateJobApplicationDto: UpdateJobApplicationDto,
-  ) {
-    return this.jobApplicationService.update(id, updateJobApplicationDto);
-  }
-*/
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a job application by ID' })
   @ApiParam({ name: 'id', type: String })
@@ -90,16 +73,21 @@ async findAll(@Query() query: FilterJobApplicationDto) {
   remove(@Param('id') id: string) {
     return this.jobApplicationService.remove(id);
   }
-@Patch(':id/status')
-@ApiBody({ type: UpdateJobApplicationStatusDto }) 
-@ApiOperation({ summary: 'Update a Status application by ID' })
-updateStatus(
-  @Param('id') id: string,
-  @Body() dto: UpdateJobApplicationStatusDto,
-) {
 
-  return this.jobApplicationService.updateStatus(id, dto);
-}
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Update the status of a job application by ID' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({ type: UpdateJobApplicationStatusDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Status updated successfully',
+  })
+  updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateJobApplicationStatusDto,
+  ) {
+    return this.jobApplicationService.updateStatus(id, dto);
+  }
 
   @Get(':id/has-profile')
   @ApiOperation({ summary: 'Check if a job application has an associated profile' })
@@ -112,7 +100,9 @@ updateStatus(
     const hasProfile = await this.jobApplicationService.checkHasProfile(id);
     return {
       hasProfile: hasProfile,
-      message: hasProfile ? 'Profile exists for this job application.' : 'No profile found for this job application.',
+      message: hasProfile
+        ? 'Profile exists for this job application.'
+        : 'No profile found for this job application.',
     };
   }
 }

@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateJobApplicationDto } from './dto/create-job-application.dto';
-import { UpdateJobApplicationDto } from './dto/update-job-application.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { JobApplicationStatus } from './types/types';
+import { JobApplicationStatus } from '@prisma/client';
 import { UpdateJobApplicationStatusDto } from './dto/update-status.dto';
 import { FilterJobApplicationDto } from './dto/filter-job-application.dto';
 
@@ -11,26 +10,65 @@ import { FilterJobApplicationDto } from './dto/filter-job-application.dto';
 export class JobApplicationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createDto: CreateJobApplicationDto) {
-    // Primeiro cria a localização
+ async create(createDto: CreateJobApplicationDto) {
+    // 1. Verificação da existência de TODOS os IDs relacionados
+    // (Relacionamentos muitos-para-um)
+    const [
+      gender,
+      desiredPosition,
+      highestDegree,
+      maritalStatus,
+      experienceLevel,
+      generalAvailability,
+    ] = await this.prisma.$transaction([
+      this.prisma.gender.findUnique({ where: { id: createDto.genderId } }),
+      this.prisma.desiredPosition.findUnique({ where: { id: createDto.desiredPositionId } }),
+      this.prisma.highestDegree.findUnique({ where: { id: createDto.highestDegreeId } }),
+      this.prisma.maritalStatus.findUnique({ where: { id: createDto.maritalStatusId } }),
+      this.prisma.experienceLevel.findUnique({ where: { id: createDto.experienceLevelId } }),
+      this.prisma.generalAvailability.findUnique({ where: { id: createDto.generalAvailabilityId } }),
+    ]);
 
-    // bVerificar se a  cidade e o distrito existem
+    if (!gender) throw new NotFoundException(`Gender with ID "${createDto.genderId}" not found.`);
+    if (!desiredPosition) throw new NotFoundException(`Desired Position with ID "${createDto.desiredPositionId}" not found.`);
+    if (!highestDegree) throw new NotFoundException(`Highest Degree with ID "${createDto.highestDegreeId}" not found.`);
+    if (!maritalStatus) throw new NotFoundException(`Marital Status with ID "${createDto.maritalStatusId}" not found.`);
+    if (!experienceLevel) throw new NotFoundException(`Experience Level with ID "${createDto.experienceLevelId}" not found.`);
+    if (!generalAvailability) throw new NotFoundException(`General Availability with ID "${createDto.generalAvailabilityId}" not found.`);
+
+    // (Relacionamentos muitos-para-muitos - arrays de IDs)
+    const [courses, languages, skills] = await this.prisma.$transaction([
+      this.prisma.course.findMany({ where: { id: { in: createDto.courses } } }),
+      this.prisma.language.findMany({ where: { id: { in: createDto.languages } } }),
+      this.prisma.skill.findMany({ where: { id: { in: createDto.skills } } }),
+    ]);
+
+    if (courses.length !== createDto.courses.length) {
+      throw new NotFoundException('One or more Course IDs are invalid.');
+    }
+    if (languages.length !== createDto.languages.length) {
+      throw new NotFoundException('One or more Language IDs are invalid.');
+    }
+    if (skills.length !== createDto.skills.length) {
+      throw new NotFoundException('One or more Skill IDs are invalid.');
+    }
+
+    // 2. Verificação da Localização
     const city = await this.prisma.city.findUnique({
       where: { id: createDto.location.cityId },
     });
     if (!city) {
       throw new NotFoundException('City not found');
-    } 
+    }
+
     const district = await this.prisma.district.findUnique({
       where: { id: createDto.location.districtId },
-    });   
+    });
     if (!district) {
       throw new NotFoundException('District not found');
     }
-    // Se ambos existem, cria a localização
-    // Se a localização já existir, você pode optar por reutilizá-la ou criar uma nova
-    // Aqui, vamos criar uma nova localização sempre  
-      
+    
+    // 3. Criação da Localização
     const location = await this.prisma.location.create({
       data: {
         cityId: createDto.location.cityId,
@@ -39,6 +77,7 @@ export class JobApplicationService {
       },
     });
 
+    // 4. Criação da Candidatura e Conexão de Relacionamentos
     return this.prisma.jobApplication.create({
       data: {
         fullName: createDto.fullName,
@@ -46,19 +85,35 @@ export class JobApplicationService {
         phoneNumber: createDto.phoneNumber,
         optionalPhoneNumber: createDto.optionalPhoneNumber,
         email: createDto.email,
-       
-        birthDate: new Date(createDto.birthDate),
-        maritalStatus: createDto.maritalStatus,
+        birthDate: createDto.birthDate,
         hasChildren: createDto.hasChildren,
         knownDiseases: createDto.knownDiseases,
-        desiredPosition: createDto.desiredPosition,
-        availabilityDate: new Date(createDto.availabilityDate),
-        professionalExperience: createDto.professionalExperience,
-        highestDegree: createDto.highestDegree,
-        languages: createDto.languages,
-        courses: createDto.courses,
-        skillsAndQualities: createDto.skillsAndQualities,
+        availabilityDate: createDto.availabilityDate,
         locationId: location.id,
+
+        // Conecta os relacionamentos muitos-para-um (IDs)
+        genderId: createDto.genderId,
+        desiredPositionId: createDto.desiredPositionId,
+        highestDegreeId: createDto.highestDegreeId,
+        maritalStatusId: createDto.maritalStatusId,
+        experienceLevelId: createDto.experienceLevelId,
+        generalAvailabilityId: createDto.generalAvailabilityId,
+
+        // Conecta os relacionamentos muitos-para-muitos (arrays de IDs)
+        languages: {
+          connect: createDto.languages.map(id => ({ id })),
+        },
+        skills: {
+          connect: createDto.skills.map(id => ({ id })),
+        },
+        courses: {
+          connect: createDto.courses.map(id => ({ id })),
+        },
+
+        // Cria as experiências profissionais aninhadas
+        ProfessionalExperience: {
+          create: createDto.ProfessionalExperience,
+        },
       },
       include: {
         location: {
@@ -67,11 +122,23 @@ export class JobApplicationService {
             district: true,
           },
         },
+        gender: true,
+        desiredPosition: true,
+        highestDegree: true,
+        maritalStatus: true,
+        experienceLevel: true,
+        generalAvailability: true,
+        languages: true,
+        skills: true,
+        courses: true,
+        ProfessionalExperience: true,
       },
     });
   }
 
-async findAll(filters: FilterJobApplicationDto) {
+
+  // Mantenha os outros métodos `findAll`, `findOne`, `remove`, etc. aqui.
+  async findAll(filters: FilterJobApplicationDto) {
   const {
     fullName,
     status,
@@ -172,7 +239,4 @@ async checkHasProfile(id: string): Promise<boolean> {
   
   return !!application; 
 }
-  
-
-
 }
