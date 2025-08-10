@@ -14,7 +14,6 @@ export class FrontendUrlService {
    */
   async create(createFrontendUrlDto: CreateFrontendUrlDto) {
 
-    console.log(createFrontendUrlDto);
     
     return this.prisma.frontendUrl.create({
       data: createFrontendUrlDto,
