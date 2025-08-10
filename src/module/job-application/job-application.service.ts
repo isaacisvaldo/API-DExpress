@@ -245,19 +245,12 @@ async updateStatus(id: string, dto: UpdateJobApplicationStatusDto) {
   });
 }
 
-async checkHasProfile(id: string): Promise<boolean> {
-  const application = await this.prisma.professional.findUnique({
-    where: { jobApplicationId: id },
-  
+async findProfessionalProfile(jobApplicationId: string){
+  const professional = await this.prisma.professional.findUnique({
+    where: { jobApplicationId: jobApplicationId }
   });
-  // Se encontrar um profissional associado, retorna true
-  // Caso contrário, retorna fals
-  if (!application) {
-    return false;
-  }
 
-  
-  
-  return !!application; 
+
+  return professional;
 }
 }
