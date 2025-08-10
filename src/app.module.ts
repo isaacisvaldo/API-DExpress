@@ -31,6 +31,7 @@ import { ExperienceLevelModule } from './module/shared/experience-level/experien
 import { SectorModule } from './module/shared/sector/sector.module';
 import { PermissionsModule } from './module/shared/permissions/permissions.module';
 import { ProfilesModule } from './module/shared/roles/profiles.module';
+import { FrontendUrlModule } from './module/shared/config/frontend-url/frontend-url.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ MailerModule.forRootAsync({
     SectorModule,
     PermissionsModule,
     ProfilesModule,
+    FrontendUrlModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, JobApplicationModule, UsersService],

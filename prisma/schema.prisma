@@ -6,6 +6,14 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+model FrontendUrl {
+  id        String   @id @default(uuid())
+  url       String   @unique
+  label     String   @default("---") 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 
 enum DocumentType {
   IDENTITY_DOCUMENT // Documento de Identificação (BI, passaporte, etc.)

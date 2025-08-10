@@ -54,6 +54,23 @@ async function main() {
   }
   console.log('✅ Setores de empresa criados com sucesso!');
 
+    console.log('Seeding frontend URLs...');
+  const urls = [
+    'http://localhost:4200', 
+    "http://localhost:5173",
+  ];
+
+  for (const url of urls) {
+    await prisma.frontendUrl.upsert({
+      where: { url: url },
+      update: {},
+      create: { url: url },
+    });
+  }
+  console.log('Frontend URLs seeded!');
+
+
+
   // --- SEED: POSIÇÕES DESEJADAS ---
   const desiredPositionMap: Record<string, string> = {};
   for (const data of desiredPositionData) {
