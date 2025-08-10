@@ -13,7 +13,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { JwtAuthGuard } from 'src/common/secret/jwt-auth.guard';
 import { Response } from 'express';
-
+const isProduction = true;
 @ApiTags('Admin Auth')
 @Controller('admin/auth')
 export class AdminAuthController {
@@ -34,9 +34,9 @@ export class AdminAuthController {
     });
 
     res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'strict',
+       httpOnly: true,
+      secure: isProduction, // Apenas true em produção (HTTPS)
+      sameSite: isProduction ? 'none' : 'lax', // none para produção, lax para localhost
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
     });
 
@@ -53,10 +53,10 @@ export class AdminAuthController {
     const { accessToken } = await this.service.refreshAccessToken(refreshToken);
 
     res.cookie('access_token', accessToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 1000, // 1 hora
+       httpOnly: true,
+      secure: isProduction, // Apenas true em produção (HTTPS)
+      sameSite: isProduction ? 'none' : 'lax', // none para produção, lax para localhost
+      maxAge: 1000 * 60 * 60, // 1 hora
     });
 
     return { success: true };
