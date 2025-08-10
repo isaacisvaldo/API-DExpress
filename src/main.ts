@@ -1,4 +1,5 @@
- import { NestFactory } from '@nestjs/core';
+// src/main.ts
+import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
@@ -7,33 +8,32 @@ import { FrontendUrlService } from './module/shared/config/frontend-url/frontend
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
- 
-    const uerls = app.get(FrontendUrlService);
+
+  const uerls = app.get(FrontendUrlService);
 
   // Prefixo global
   app.setGlobalPrefix('api');
   // Middleware para cookies
   app.use(cookieParser());
-  const fixedDomain = process.env.ADMIN_DOMAIN ; 
+
+  let allowedDomains: string[] = [];
+  try {
+    const allowedDomainsFromDB = await uerls.getAllDomains();
+    allowedDomains = allowedDomainsFromDB.filter(Boolean); 
+  } catch (err) {
+    console.error('Erro ao carregar domínios do banco de dados para CORS:', err);
+    allowedDomains = ['http://localhost:4200', 'http://localhost:5173'];
+  }
+
+  console.log('Domínios CORS permitidos:', allowedDomains);
+
   app.enableCors({
-    origin: async (origin, callback) => {
-      if (!origin) return callback(null, true);
-
-      try {
-        const allowedDomainsFromDB = await uerls.getAllDomains();
-        const allowedDomains = [...allowedDomainsFromDB, fixedDomain];
-
-        if (allowedDomains.includes(origin)) {
-          return callback(null, true);
-        }
-        return callback(new Error('Not allowed by CORS'), false);
-      } catch (err) {
-        console.error('Erro ao validar CORS:', err);
-        return callback(new Error('Erro interno no CORS'), false);
-      }
-    },
+    origin: allowedDomains, 
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    
     credentials: true,
   });
+
   // Swagger config
   const config = new DocumentBuilder()
     .setTitle('DExpress')
@@ -43,6 +43,7 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
+
   // Validação global
   app.useGlobalPipes(
     new ValidationPipe({
@@ -51,6 +52,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
-await app.listen(process.env.PORT ?? 3000);
+
+  await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
