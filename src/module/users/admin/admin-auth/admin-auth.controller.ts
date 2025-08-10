@@ -29,7 +29,7 @@ export class AdminAuthController {
     res.cookie('access_token', accessToken, {
       httpOnly: true,
       secure: false, // true em produção com HTTPS
-      sameSite: 'strict',
+     sameSite: isProduction ? 'none' : 'lax', // none para produção, lax para localhost
       maxAge: 60 * 60 * 1000, // 1 hora
     });
 
