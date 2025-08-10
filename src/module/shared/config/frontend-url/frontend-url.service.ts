@@ -13,6 +13,9 @@ export class FrontendUrlService {
    * Cria uma nova URL de frontend.
    */
   async create(createFrontendUrlDto: CreateFrontendUrlDto) {
+
+    console.log(createFrontendUrlDto);
+    
     return this.prisma.frontendUrl.create({
       data: createFrontendUrlDto,
     });
