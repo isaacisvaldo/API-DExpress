@@ -97,10 +97,10 @@ export class JobApplicationController {
     description: 'Returns true if the job application has a profile, false otherwise',
   })
   async checkHasProfile(@Param('id') id: string) {
-    const hasProfile = await this.jobApplicationService.checkHasProfile(id);
+    const Profile = await this.jobApplicationService.findProfessionalProfile(id);
     return {
-      hasProfile: hasProfile,
-      message: hasProfile
+      Profile: Profile,
+      message: Profile
         ? 'Profile exists for this job application.'
         : 'No profile found for this job application.',
     };

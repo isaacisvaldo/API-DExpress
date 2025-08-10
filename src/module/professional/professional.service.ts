@@ -126,7 +126,70 @@ export class ProfessionalService {
       totalPages,
     };
   }
+  async getPublicProfessionals(filter: FilterProfessionalDto): Promise<PaginatedDto<Professional>> {
+    const page = filter.page || 1;
+    const limit = filter.limit || 10;
+    const skip = (page - 1) * limit;
 
+    const where: Prisma.ProfessionalWhereInput = {
+      fullName: filter.name ? { contains: filter.name, mode: 'insensitive' } : undefined,
+      location: {
+        cityId: filter.cityId || undefined,
+        districtId: filter.districtId || undefined,
+      },
+      availabilityTypeId: filter.availabilityTypeId || undefined,
+      experienceLevelId: filter.experienceLevelId || undefined,
+      desiredPositionId: filter.desiredPositionId || undefined,
+      genderId: filter.genderId || undefined,
+      maritalStatusId: filter.maritalStatusId || undefined,
+      highestDegreeId: filter.highestDegreeId || undefined,
+      hasCriminalRecord: filter.hasCriminalRecord || undefined,
+      hasMedicalCertificate: filter.hasMedicalCertificate || undefined,
+      hasTrainingCertificate: filter.hasTrainingCertificate || undefined,
+      hasChildren: filter.hasChildren || undefined,
+
+      professionalCourses: filter.courseId ? { some: { courseId: filter.courseId } } : undefined,
+      professionalLanguages: filter.languageId ? { some: { languageId: filter.languageId } } : undefined,
+      professionalSkills: filter.skillId ? { some: { skillId: filter.skillId } } : undefined,
+      ProfessionalExperience: filter.experienceId ? { some: { id: filter.experienceId } } : undefined,
+      isAvailable:true
+    };
+
+    const [professionals, total] = await this.prisma.$transaction([
+      this.prisma.professional.findMany({
+        
+        skip,
+        take: limit,
+        where,
+        include: {
+          location: { include: { city: true, district: true } },
+          desiredPosition: true,
+          gender: true,
+          jobApplication: true,
+          experienceLevel: true,
+          maritalStatus: true,
+          highestDegree: true,
+          availability: true,
+          Document: true,
+          ProfessionalExperience: true,
+          professionalCourses: { include: { course: true } },
+          professionalLanguages: { include: { language: true } },
+          professionalSkills: { include: { skill: true } },
+        },
+      }),
+      this.prisma.professional.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: professionals,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+  }
 
   // ... (findOne method - remains unchanged as it's correct for its purpose) ...
 
@@ -267,5 +330,22 @@ export class ProfessionalService {
       }
       throw error;
     }
+  }
+  /**
+   * Atualiza especificamente o status de disponibilidade de um profissional.
+   * @param id O ID do profissional.
+   * @param isAvailable O novo estado de disponibilidade (true ou false).
+   * @returns O objeto Professional atualizado.
+   */
+  async updateAvailability(id: string, isAvailable: boolean): Promise<Professional> {
+    const professional = await this.prisma.professional.findUnique({ where: { id } });
+    if (!professional) {
+      throw new NotFoundException(`Profissional com ID "${id}" não encontrado.`);
+    }
+
+    return this.prisma.professional.update({
+      where: { id },
+      data: { isAvailable }, 
+    });
   }
 }

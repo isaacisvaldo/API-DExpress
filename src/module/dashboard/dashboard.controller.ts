@@ -8,14 +8,7 @@ export class DashboardController {
 
  @Get('summary')
   async getDashboardSummary() {
-    const data = {
-      totalProfessionals: 1,
-      totalClients: 3,
-      activeServices: 0,
-      canceledRequests: 0,
-    };
-
-    return data;
+    return  await this.dashboardService.getDashboardSummary();
   }
 
     @Get('growth/clients-profissionals/registrations')

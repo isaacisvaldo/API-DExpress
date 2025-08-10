@@ -166,7 +166,18 @@ export class JobApplicationService {
             city: true,
             district: true,
           },
+          
         },
+        gender: true,
+        desiredPosition: true,
+        highestDegree: true,
+        maritalStatus: true,
+        experienceLevel: true,
+        generalAvailability: true,
+        languages: true,
+        skills: true,
+        courses: true,
+        ProfessionalExperience: true,
       },
       skip: (page - 1) * limit,
       take: limit,
@@ -197,6 +208,16 @@ export class JobApplicationService {
             district: true,
           },
         },
+        gender: true,
+        desiredPosition: true,
+        highestDegree: true,
+        maritalStatus: true,
+        experienceLevel: true,
+        generalAvailability: true,
+        languages: true,
+        skills: true,
+        courses: true,
+        ProfessionalExperience: true,
       },
     });
     if (!application) {
@@ -224,19 +245,12 @@ async updateStatus(id: string, dto: UpdateJobApplicationStatusDto) {
   });
 }
 
-async checkHasProfile(id: string): Promise<boolean> {
-  const application = await this.prisma.professional.findUnique({
-    where: { jobApplicationId: id },
-  
+async findProfessionalProfile(jobApplicationId: string){
+  const professional = await this.prisma.professional.findUnique({
+    where: { jobApplicationId: jobApplicationId }
   });
-  // Se encontrar um profissional associado, retorna true
-  // Caso contrário, retorna fals
-  if (!application) {
-    return false;
-  }
 
-  
-  
-  return !!application; 
+
+  return professional;
 }
 }
