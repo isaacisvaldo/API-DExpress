@@ -20,7 +20,7 @@
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate deploy",
     "prisma:migrate:dev": "npx prisma migrate dev",
-    "prisma:seed": "if [ \"$NODE_ENV\" = \"production\" ]; then node dist/src/prisma/seed.js; else npx ts-node prisma/seed.ts; fi",
+    "prisma:seed": "if [ \"$NODE_ENV\" = \"production\" ]; then node prisma/seed.js; else npx ts-node prisma/seed.ts; fi",
     "prisma:reset": "npx prisma migrate reset --force --skip-seed && npm run prisma:seed"
   },
   "dependencies": {
