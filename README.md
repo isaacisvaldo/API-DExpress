@@ -74,7 +74,7 @@ $ mau deploy
 $ npm install -g @nestjs/mau
 $ mau deploy
 
-make up        # Sobe tudo (NestJS, Postgres e pgAdmin)
+make up-dev        # Sobe tudo (NestJS, Postgres e pgAdmin)
 make logs      # Mostra logs do NestJS em tempo real
 make sh        # Entra dentro do container para rodar comandos
 make migrate   # Executa as migrations do Prisma
