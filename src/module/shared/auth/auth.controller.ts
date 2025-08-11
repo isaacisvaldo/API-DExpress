@@ -11,7 +11,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
 import { Response, Request } from 'express';
 
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = process.env.COOKIES === 'production';
 
 @ApiTags('Autenticação')
 @Controller('auth')
