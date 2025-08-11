@@ -14,7 +14,7 @@ import { AdminLoginDto } from './dto/admin-login.dto';
 import { JwtAuthGuard } from 'src/common/secret/jwt-auth.guard';
 import { Response } from 'express';
 
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = process.env.COOKIES === 'production';
 
 @ApiTags('Admin Auth')
 @Controller('admin/auth')
