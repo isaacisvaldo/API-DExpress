@@ -13,7 +13,9 @@ import { ApiTags } from '@nestjs/swagger';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { JwtAuthGuard } from 'src/common/secret/jwt-auth.guard';
 import { Response } from 'express';
-const isProduction = true;
+
+const isProduction = process.env.NODE_ENV === 'production';
+
 @ApiTags('Admin Auth')
 @Controller('admin/auth')
 export class AdminAuthController {
@@ -26,17 +28,19 @@ export class AdminAuthController {
   ) {
     const { accessToken, refreshToken, user } = await this.service.login(dto);
 
+    // Access token
     res.cookie('access_token', accessToken, {
       httpOnly: true,
-      secure: false, // true em produção com HTTPS
-     sameSite: isProduction ? 'none' : 'lax', // none para produção, lax para localhost
+      secure: isProduction, // true em produção (HTTPS)
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 60 * 60 * 1000, // 1 hora
     });
 
+    // Refresh token
     res.cookie('refresh_token', refreshToken, {
-       httpOnly: true,
-      secure: isProduction, // Apenas true em produção (HTTPS)
-      sameSite: isProduction ? 'none' : 'lax', // none para produção, lax para localhost
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
     });
 
@@ -44,7 +48,10 @@ export class AdminAuthController {
   }
 
   @Post('refresh')
-  async refreshToken(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+  async refreshToken(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const refreshToken = req.cookies?.refresh_token;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token não fornecido');
@@ -53,10 +60,10 @@ export class AdminAuthController {
     const { accessToken } = await this.service.refreshAccessToken(refreshToken);
 
     res.cookie('access_token', accessToken, {
-       httpOnly: true,
-      secure: isProduction, // Apenas true em produção (HTTPS)
-      sameSite: isProduction ? 'none' : 'lax', // none para produção, lax para localhost
-      maxAge: 1000 * 60 * 60, // 1 hora
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 60 * 60 * 1000, // 1 hora
     });
 
     return { success: true };
@@ -64,8 +71,16 @@ export class AdminAuthController {
 
   @Post('logout')
   async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token');
+    res.clearCookie('access_token', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+    });
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+    });
     return { message: 'Logout realizado com sucesso' };
   }
 

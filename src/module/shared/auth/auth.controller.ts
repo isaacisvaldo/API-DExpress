@@ -11,6 +11,8 @@ import { ApiTags } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
 import { Response, Request } from 'express';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 @ApiTags('Autenticação')
 @Controller('auth')
 export class AuthController {
@@ -22,38 +24,44 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const user = await this.authService.validateUser(body.email, body.password);
-    const { accessToken, refreshToken, ...userData } = await this.authService.login(user);
+    const { accessToken, refreshToken, ...userData } =
+      await this.authService.login(user);
 
     res.cookie('access_token', accessToken, {
       httpOnly: true,
-      secure: false, // true em produção com HTTPS
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 1000, // 1h
+      secure: isProduction, // true em produção (HTTPS)
+      sameSite: isProduction ? 'none' : 'lax', // none em produção, lax no dev
+      maxAge: 60 * 60 * 1000, // 1 hora
     });
 
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
     });
 
     return { user: userData };
   }
 
   @Post('refresh')
-  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const refreshToken = req.cookies?.refresh_token;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token não fornecido');
     }
 
-    const { accessToken } = await this.authService.refreshAccessToken(refreshToken);
+    const { accessToken } = await this.authService.refreshAccessToken(
+      refreshToken,
+    );
 
     res.cookie('access_token', accessToken, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'strict',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 60 * 60 * 1000, // 1 hora
     });
 
@@ -62,8 +70,16 @@ export class AuthController {
 
   @Post('logout')
   async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token');
+    res.clearCookie('access_token', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+    });
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+    });
     return { message: 'Logout realizado com sucesso' };
   }
 }
