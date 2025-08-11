@@ -21,7 +21,7 @@ export class AdminUserService {
    * @param creatorId ID do utilizador que está a criar.
    * @returns Mensagem de sucesso e o ID do novo administrador.
    */
-  async create(dto: CreateAdminUserDto, creatorId: string) {
+  async create(dto: CreateAdminUserDto, creatorId: string,originDomain:any) {
     // 1. Verifica se quem cria é um Admin Geral
     const creator = await this.prisma.adminUser.findUnique({ where: { id: creatorId } });
     if (!creator) {
@@ -66,7 +66,7 @@ export class AdminUserService {
     });
 
     // 6. Envia o email de boas-vindas
-    await this.sendAdminWelcomeEmail(newAdmin.email, password);
+    await this.sendAdminWelcomeEmail(newAdmin.email, password,originDomain,profile.label);
     return { message: 'Administrador criado com sucesso', id: newAdmin.id };
   }
   
@@ -239,8 +239,8 @@ export class AdminUserService {
    * @param adminEmail O email do administrador.
    * @param tempPassword A senha temporária.
    */
-  async sendAdminWelcomeEmail(adminEmail: string, tempPassword: string) {
-    const dashboardUrl = process.env.DASHBOARD_URL 
+  async sendAdminWelcomeEmail(adminEmail: string, tempPassword: string,originDomain:any,perfil:string) {
+    const dashboardUrl = originDomain
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; background: #f7f9fc; border-radius: 8px; padding: 20px; color: #333;">
         <div style="text-align: center; margin-bottom: 20px;">
@@ -252,7 +252,7 @@ export class AdminUserService {
         <div style="padding: 20px; background: #ffffff; border: 1px solid #e5e7eb;">
           <p style="font-size: 16px;">Olá,</p>
           <p style="font-size: 16px;">
-            Sua conta de <strong>Administrador DExpress</strong> foi criada com sucesso!  
+            Sua conta de <strong>${perfil}</strong> foi criada com sucesso!  
             Utilize as credenciais abaixo para acessar o painel administrativo.
           </p>
 
