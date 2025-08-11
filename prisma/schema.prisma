@@ -131,6 +131,8 @@ model GeneralAvailability {
   name           String           @unique
   label          String
   JobApplication JobApplication[]
+   createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt @default(now())
 }
 
 model ExperienceLevel {
@@ -140,6 +142,8 @@ model ExperienceLevel {
   professionals Professional[]
 
   JobApplication JobApplication[]
+   createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt @default(now())
 }
 
 model Gender {
@@ -150,6 +154,8 @@ model Gender {
   AdminUser     AdminUser[]
 
   jobApplication JobApplication[]
+   createdAt DateTime   @default(now())
+ updatedAt DateTime   @updatedAt @default(now())
 }
 
 model MaritalStatus {
@@ -159,6 +165,8 @@ model MaritalStatus {
   professionals Professional[]
 
   JobApplication JobApplication[]
+   createdAt DateTime   @default(now())
+ updatedAt DateTime   @updatedAt @default(now())
 }
 
 model HighestDegree {
@@ -169,6 +177,8 @@ model HighestDegree {
   professionals Professional[]
 
   JobApplication JobApplication[]
+   createdAt DateTime   @default(now())
+ updatedAt DateTime   @updatedAt @default(now())
 }
 
 model DesiredPosition {
@@ -179,6 +189,8 @@ model DesiredPosition {
   professionals Professional[]
 
   JobApplication JobApplication[]
+   createdAt DateTime   @default(now())
+ updatedAt DateTime   @updatedAt @default(now())
 }
 
 // ----------------------------------------------------
@@ -191,6 +203,8 @@ model Course {
   // Relacionamento inverso com a tabela de junção
   professionalCourses ProfessionalCourses[]
   JobApplication      JobApplication[]
+   createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt @default(now())
 }
 
 //A tabela intermediária que une o Professional com o Course
@@ -201,6 +215,8 @@ model ProfessionalCourses {
   course         Course       @relation(fields: [courseId], references: [id])
 
   @@id([professionalId, courseId])
+   createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt @default(now())
 }
 
 // ----------------------------------------------------
@@ -215,6 +231,8 @@ model Language {
   professionalLanguages ProfessionalLanguages[]
 
   JobApplication JobApplication[]
+   createdAt DateTime   @default(now())
+ updatedAt DateTime   @updatedAt @default(now())
 }
 
 // A tabela intermediária que une o Professional com o Language
@@ -239,6 +257,8 @@ model Skill {
   professionalSkills ProfessionalSkills[]
 
   JobApplication JobApplication[]
+   createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt @default(now())
 }
 
 // A tabela intermediária que une o Professional com a Skill
@@ -259,7 +279,7 @@ model Experience{
   cargo          String
   tempo          String
   createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+ updatedAt DateTime   @updatedAt @default(now())
   jobApplication JobApplication[]
   Professional Professional[]
 }
@@ -294,8 +314,8 @@ model Location {
   street         String?
   lat            Float?
   lng            Float?
-  professionals  Professional[] // One location → many professionals
-  jobApplication JobApplication[] // One location → many jobApplication
+  professionals  Professional[] 
+  jobApplication JobApplication[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 }
@@ -305,8 +325,9 @@ model City {
   name      String     @unique
   districts District[]
   locations Location[]
+  isAvailable            Boolean                  @default(false)
   createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+ updatedAt DateTime   @updatedAt @default(now())
 }
 
 model District {
@@ -315,8 +336,9 @@ model District {
   city      City       @relation(fields: [cityId], references: [id])
   cityId    String
   locations Location[]
+    isAvailable            Boolean                  @default(false)
   createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  updatedAt DateTime   @updatedAt @default(now())
 
   @@unique([name, cityId])
 }
@@ -359,6 +381,8 @@ model Sector {
   id        String           @id @default(uuid())
   name      String           @unique
   companies CompanyProfile[]
+   createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt @default(now())
 }
 
 model User {
