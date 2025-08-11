@@ -20,8 +20,10 @@ export class AdminUserController {
   @ApiOperation({ summary: 'Cria um novo utilizador administrador' })
   @ApiResponse({ status: 201, description: 'Utilizador criado com sucesso' })
   async createAdmin(@Body() dto: CreateAdminUserDto, @Req() req: any) {
+     const originDomain = req.headers['origin']; 
+    
     const creatorId = req.user.sub || req.user.id;
-    return this.service.create(dto, creatorId);
+    return this.service.create(dto, creatorId,originDomain);
   }
 
   @Get('profile')
