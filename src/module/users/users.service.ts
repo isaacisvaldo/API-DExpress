@@ -12,6 +12,9 @@ import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
+import * as dns from 'dns';
+import { testDomains } from 'src/util/test-domain';
+
 
 @Injectable()
 export class UserService {
@@ -19,7 +22,7 @@ export class UserService {
     private readonly prisma: PrismaService,
     private readonly mailerService: MailerService,
   ) {}
-
+  
   /**
    * Cria um novo usuário no sistema, gerando uma senha temporária e enviando por e-mail.
    * Não associa um perfil na criação.
@@ -27,35 +30,77 @@ export class UserService {
    * @returns O usuário criado e uma mensagem de sucesso.
    * @throws BadRequestException se o e-mail já estiver cadastrado.
    */
-  async create(createUserDto: CreateUserDto,originDomain:string) {
-    const { email, firstName, lastName, type } = createUserDto;
 
-    const existingUser = await this.findByEmail(email);
-    if (existingUser) {
-      throw new BadRequestException('E-mail já cadastrado.');
-    }
+async create(createUserDto: CreateUserDto, originDomain: string) {
+  const { email, firstName, lastName, type } = createUserDto;
+  const domain = email.split('@')[1];
 
-    const tempPassword = randomBytes(4).toString('hex');
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+  // 1. Verificação se o e-mail é de teste (nova verificação)
+  if (testDomains.includes(domain)) {
+    throw new BadRequestException('E-mails de teste não são permitidos.');
+  }
 
-    const user = await this.prisma.user.create({
-      data: {
-        firstName,
-        lastName,
-        email,
-        password: hashedPassword,
-        type,
-      },
+
+
+  // 1. Validação do formato do e-mail
+  const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (!isValidFormat) {
+    throw new BadRequestException('Formato de e-mail inválido.');
+  }
+
+  // 2. Verificação do domínio (registros MX)
+
+  try {
+    const mxRecords = await new Promise<dns.MxRecord[]>((resolve, reject) => {
+      dns.resolveMx(domain, (err, addresses) => {
+        if (err) {
+          // Se houver erro, rejeita a Promise
+          return reject(err);
+        }
+        // Se der certo, resolve a Promise com o array de registros
+        resolve(addresses);
+      });
     });
 
-    await this.sendWelcomeEmail(email, tempPassword,originDomain);
-
-    return {
-      message: 'Usuário criado com sucesso. Senha temporária enviada por e-mail.',
-      userId: user.id,
-      email: user.email,
-    };
+    // Agora mxRecords é garantido ser um array,
+    // então a verificação do length funciona
+    if (mxRecords.length === 0) {
+      throw new BadRequestException('O domínio do e-mail não é válido.');
+    }
+  } catch (error) {
+    // Este bloco de catch vai capturar erros como ENODATA, ENOTFOUND, etc.
+    // que significam que o domínio não tem registros MX ou não existe.
+    throw new BadRequestException('O domínio do e-mail não é válido.');
   }
+  
+  // 3. Verificação de usuário existente
+  const existingUser = await this.findByEmail(email);
+  if (existingUser) {
+    throw new BadRequestException('E-mail já cadastrado.');
+  }
+
+  // Restante da sua lógica
+  const tempPassword = randomBytes(4).toString('hex');
+  const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+  const user = await this.prisma.user.create({
+    data: {
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      type,
+    },
+  });
+
+  await this.sendWelcomeEmail(email, tempPassword, originDomain);
+
+  return {
+    message: 'Usuário criado com sucesso. Senha temporária enviada por e-mail.',
+    userId: user.id,
+    email: user.email,
+  };
+}
 
 
 
