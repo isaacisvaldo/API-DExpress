@@ -14,7 +14,7 @@ export class AdminAuthService {
   async login(dto: AdminLoginDto) {
     // ✅ Incluir o perfil e as permissões dentro dele
     const admin = await this.prisma.adminUser.findUnique({
-      where: { email: dto.email },
+      where: { email: dto.email ,isActive:true},
       include: {
         profile: {
           include: {
@@ -27,11 +27,8 @@ export class AdminAuthService {
     if (!admin || !(await bcrypt.compare(dto.password, admin.password))) {
       throw new UnauthorizedException('Credenciais inválidas');
     }
-
     // ✅ Mapear as permissões a partir do perfil
     const permissionNames = admin.profile?.permissions.map((p) => p.name) || [];
-  
-
     const payload = {
       id: admin.id,
       email: admin.email,
@@ -39,7 +36,6 @@ export class AdminAuthService {
       role: admin.profile.label,
       permissions: permissionNames,
     };
-
     const accessToken = this.jwt.sign(payload, {
       secret: process.env.JWT_SECRET,
       expiresIn: process.env.JWT_EXPIRES_IN,

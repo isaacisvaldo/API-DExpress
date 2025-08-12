@@ -29,9 +29,9 @@ export class AuthController {
 
     res.cookie('access_token', accessToken, {
       httpOnly: true,
-      secure: isProduction, // true em produção (HTTPS)
-      sameSite: isProduction ? 'none' : 'lax', // none em produção, lax no dev
-      maxAge: 60 * 60 * 1000, // 1 hora
+      secure: isProduction, 
+      sameSite: isProduction ? 'none' : 'lax', 
+      maxAge: 60 * 60 * 1000, 
     });
 
     res.cookie('refresh_token', refreshToken, {
