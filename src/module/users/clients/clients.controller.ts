@@ -1,54 +1,109 @@
-// src/client-profile/client-profile.controller.ts
 import {
-  Body,
   Controller,
   Get,
   Post,
+  Body,
+  Patch,
   Param,
-  Query,
-  Put,
   Delete,
+  Request,
+  Query,
 } from '@nestjs/common';
-
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CreateClientProfileDto } from './dto/create-client-profile.dto';
-import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { UpdateClientProfileDto } from './dto/update-client-profile.dto';
+
+import { ClientProfile as ClientProfileModel } from '@prisma/client';
+import { FindAllDto } from 'src/common/pagination/find-all.dto';
+import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { ClientProfileService } from './clients.service';
 
 @ApiTags('Client Profiles')
-@Controller('clients')
+@ApiBearerAuth()
+@Controller('client-profiles')
 export class ClientProfileController {
-  constructor(private readonly clientProfileService: ClientProfileService) {}
-
-  @Post()
-  @ApiOperation({ summary: 'Cria um novo perfil de cliente' })
-  create(@Body() dto: CreateClientProfileDto) {
-    return this.clientProfileService.create(dto);
-  }
+  constructor(private readonly profileService: ClientProfileService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lista clientes com paginação' })
-  @ApiQuery({ name: 'page', required: false, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, example: 10 })
-  @ApiQuery({ name: 'search', required: false, example: 'Isaac' })
-  findAll(@Query('page') page = 1, @Query('limit') limit = 10, @Query('search') search?: string) {
-    return this.clientProfileService.findAll(Number(page), Number(limit), search);
+  @ApiOperation({ summary: 'Lista todos os perfis de cliente com paginação e pesquisa.' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiResponse({ status: 200, description: 'Lista de perfis paginada.', type: PaginatedDto })
+  findAll(@Query() query: FindAllDto): Promise<PaginatedDto<ClientProfileModel>> {
+    return this.profileService.findAll(query);
+  }
+
+  @Post()
+  @ApiOperation({
+    summary: 'Cria um novo perfil de cliente para o usuário autenticado.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Perfil de cliente criado com sucesso.',
+    
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Usuário já possui perfil ou não é do tipo INDIVIDUAL.',
+  })
+  @ApiResponse({ status: 404, description: 'Usuário não encontrado.' })
+  create(
+    @Request() req: any,
+    @Body() createDto: CreateClientProfileDto,
+  ): Promise<ClientProfileModel> {
+    const userId = req.user.id; 
+    return this.profileService.create(userId, createDto);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Busca detalhes de um cliente' })
-  findOne(@Param('id') id: string) {
-    return this.clientProfileService.findOne(id);
+  @ApiOperation({ summary: 'Busca um perfil de cliente pelo ID.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil encontrado.',
+    
+  })
+  @ApiResponse({ status: 404, description: 'Perfil não encontrado.' })
+  findOne(@Param('id') id: string): Promise<ClientProfileModel> {
+    return this.profileService.findOne(id);
   }
 
-  @Put(':id')
-  @ApiOperation({ summary: 'Atualiza dados de um cliente' })
-  update(@Param('id') id: string, @Body() dto: Partial<CreateClientProfileDto>) {
-    return this.clientProfileService.update(id, dto);
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Busca o perfil de cliente por ID do usuário.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil encontrado.',
+    
+  })
+  @ApiResponse({ status: 404, description: 'Perfil não encontrado.' })
+  findByUserId(@Param('userId') userId: string): Promise<ClientProfileModel> {
+    return this.profileService.findByUserId(userId);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Atualiza um perfil de cliente pelo ID.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil atualizado com sucesso.',
+    
+  })
+  @ApiResponse({ status: 404, description: 'Perfil não encontrado.' })
+  update(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateClientProfileDto,
+  ): Promise<ClientProfileModel> {
+    return this.profileService.update(id, updateDto);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Remove um cliente' })
-  remove(@Param('id') id: string) {
-    return this.clientProfileService.remove(id);
+  @ApiOperation({ summary: 'Remove um perfil de cliente pelo ID.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil removido com sucesso.',
+    
+  })
+  @ApiResponse({ status: 404, description: 'Perfil não encontrado.' })
+  remove(@Param('id') id: string): Promise<ClientProfileModel> {
+    return this.profileService.remove(id);
   }
 }

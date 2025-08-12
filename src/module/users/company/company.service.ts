@@ -1,75 +1,141 @@
-// src/company-profile/company-profile.service.ts
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+// src/company/client-company-profile.service.ts
 
-import { CreateCompanyProfileDto } from './dto/create-company-profile.dto';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { Prisma, ClientCompanyProfile, UserType } from '@prisma/client';
+import { CreateCompanyProfileDto } from './dto/create-company-profile.dto';
+import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
+import { FindAllDto } from 'src/common/pagination/find-all.dto';
+import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 
 @Injectable()
-export class CompanyProfileService {
-  constructor(private readonly prisma: PrismaService) {}
+export class ClientCompanyProfileService {
+  constructor(private readonly prisma: PrismaService) { }
 
- async create(dto: CreateCompanyProfileDto) {
-    // Verifica se já existe uma empresa com mesmo e-mail, telefone ou NIF
-    const existingCompany = await this.prisma.companyProfile.findFirst({
-      where: {
+  /**
+   * Lista todos os perfis de empresa com paginação e pesquisa.
+   */
+  async findAll(query: FindAllDto): Promise<PaginatedDto<ClientCompanyProfile>> {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ClientCompanyProfileWhereInput = query.search
+      ? {
         OR: [
-          { email: dto.email },
-          { phoneNumber: dto.phoneNumber },
-          { nif: dto.nif },
+          { companyName: { contains: query.search, mode: 'insensitive' } },
+          { email: { contains: query.search, mode: 'insensitive' } },
+          { nif: { contains: query.search, mode: 'insensitive' } },
         ],
-      },
-    });
-
-    if (existingCompany) {
-      throw new BadRequestException(
-        'Já existe uma empresa cadastrada com este e-mail, telefone ou NIF.',
-      );
-    }
-
-    // Cria a empresa se não existir duplicata
-    return this.prisma.companyProfile.create({
-      data: dto,
-    });
-  }
-
-  async findAll(page = 1, limit = 10, search?: string) {
-    const where = search
-      ? { companyName: { contains: search, mode: 'insensitive' as const } }
+      }
       : {};
 
-    const [data, total] = await Promise.all([
-      this.prisma.companyProfile.findMany({
-        where,
-        skip: (page - 1) * limit,
+    const [profiles, total] = await this.prisma.$transaction([
+      this.prisma.clientCompanyProfile.findMany({
+        skip,
         take: limit,
-        orderBy: { companyName: 'asc' },
+        where,
+        include: {
+
+          sector: true,
+        },
       }),
-      this.prisma.companyProfile.count({ where }),
+      this.prisma.clientCompanyProfile.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+
     return {
-      data,
+      data: profiles,
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages,
     };
   }
 
-  async findOne(id: string) {
-    const company = await this.prisma.companyProfile.findUnique({ where: { id } });
-    if (!company) throw new NotFoundException('Empresa não encontrada.');
-    return company;
-  }
+  /**
+   * Cria um novo perfil de empresa para um usuário.
+   */
+  async create(
 
-  async update(id: string, dto: Partial<CreateCompanyProfileDto>) {
-    return this.prisma.companyProfile.update({
-      where: { id },
-      data: dto,
+    createDto: CreateCompanyProfileDto,
+  ): Promise<ClientCompanyProfile> {
+
+
+    return this.prisma.clientCompanyProfile.create({
+      data: {
+        ...createDto,
+
+      },
     });
   }
 
-  async remove(id: string) {
-    return this.prisma.companyProfile.delete({ where: { id } });
+  /**
+   * Busca um perfil de empresa pelo seu ID.
+   */
+  async findOne(id: string): Promise<ClientCompanyProfile> {
+    const profile = await this.prisma.clientCompanyProfile.findUnique({
+      where: { id },
+      include: {
+
+        sector: true,
+      },
+    });
+
+    if (!profile) {
+      throw new NotFoundException(
+        `Perfil de empresa com ID '${id}' não encontrado.`,
+      );
+    }
+    return profile;
+  }
+
+
+
+  /**
+   * Atualiza um perfil de empresa existente.
+   */
+  async update(
+    id: string,
+    updateDto: UpdateCompanyProfileDto,
+  ): Promise<ClientCompanyProfile> {
+    try {
+      return await this.prisma.clientCompanyProfile.update({
+        where: { id },
+        data: updateDto,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException(
+            `Perfil de empresa com ID '${id}' não encontrado.`,
+          );
+        }
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Remove um perfil de empresa.
+   */
+  async remove(id: string): Promise<ClientCompanyProfile> {
+    try {
+      return await this.prisma.clientCompanyProfile.delete({ where: { id } });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException(
+            `Perfil de empresa com ID '${id}' não encontrado.`,
+          );
+        }
+      }
+      throw error;
+    }
   }
 }

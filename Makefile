@@ -33,6 +33,9 @@ logs:
 generate:
 	docker exec -it $(APP) npx prisma generate
 
+reset-prisma:
+	docker exec -it $(APP) npx prisma migrate reset
+
 
 # Entrar no container do app (shell)
 sh:

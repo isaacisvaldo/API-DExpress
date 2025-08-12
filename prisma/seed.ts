@@ -44,13 +44,14 @@ async function main() {
 
   // --- SEED: SETORES DE EMPRESA ---
   const sectorMap: Record<string, string> = {};
-  for (const name of sectorNames) {
+  for (const data of sectorNames) {
     const sector = await prisma.sector.upsert({
-      where: { name },
+        where: { name: data.name },
       update: {},
-      create: { name },
+      create: data,
+    
     });
-    sectorMap[name] = sector.id;
+    sectorMap[data.name] = sector.id;
   }
   console.log('✅ Setores de empresa criados com sucesso!');
 

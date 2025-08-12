@@ -31,7 +31,7 @@ export class AdminAuthController {
     // Access token
     res.cookie('access_token', accessToken, {
       httpOnly: true,
-      secure: isProduction, // true em produção (HTTPS)
+      secure: isProduction, 
       sameSite: isProduction ? 'none' : 'lax',
       maxAge: 60 * 60 * 1000, // 1 hora
     });
