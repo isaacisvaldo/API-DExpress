@@ -12,7 +12,6 @@ import { AdminModule } from './module/users/admin/admin.module';
 import { ClientsModule } from './module/users/clients/clients.module';
 import { CompanyModule } from './module/users/company/company.module';
 import { UsersModule } from './module/users/users.module';
-import { UsersService } from './module/users/users.service';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { AdminAuthModule } from './module/users/admin/admin-auth/admin-auth.module';
 import { EmailController } from './module/shared/Email/email.controller';
@@ -60,7 +59,6 @@ MailerModule.forRootAsync({
     CityModule,
     DistrictModule,
     LocationModule,
-   
     JobApplicationModule,
     ClientsModule,
     CompanyModule,
@@ -85,7 +83,7 @@ MailerModule.forRootAsync({
     FrontendUrlModule,
   ],
   controllers: [AppController, EmailController],
-  providers: [AppService, JobApplicationModule, UsersService],
+  providers: [AppService, JobApplicationModule],
 })
 export class AppModule {
 
