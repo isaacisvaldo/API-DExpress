@@ -14,6 +14,7 @@ import { internalPermissions } from './seeds/permission.seed';
 
 import * as bcrypt from 'bcrypt';
 import { profilesData } from './seeds/perfil.seed';
+import { packageSeeds } from './seeds/Package.seed';
 
 const prisma = new PrismaClient();
 
@@ -55,7 +56,7 @@ async function main() {
   }
   console.log('✅ Setores de empresa criados com sucesso!');
 
-    console.log('Seeding frontend URLs...');
+   
   const urls = [
     'http://localhost:4200', 
     "http://localhost:5173",
@@ -71,6 +72,24 @@ async function main() {
   }
   console.log('Frontend URLs seeded!');
 
+
+ console.log('Iniciando o seeding de pacotes...');
+
+  const packageMap: Record<string, string> = {};
+
+  for (const data of packageSeeds) {
+  
+    const pkg = await prisma.package.upsert({
+      where: { name: data.name },
+      update: {},
+                 
+      create: data, 
+    });
+    packageMap[data.name] = pkg.id; 
+   
+  }
+
+  console.log('✅ Seeding de pacotes concluído!');
 
 
   // --- SEED: POSIÇÕES DESEJADAS ---

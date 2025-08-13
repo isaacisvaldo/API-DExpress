@@ -32,6 +32,9 @@ import { PermissionsModule } from './module/shared/permissions/permissions.modul
 import { ProfilesModule } from './module/shared/roles/profiles.module';
 import { FrontendUrlModule } from './module/shared/config/frontend-url/frontend-url.module';
 
+import { CompanyPackageModule } from './module/shared/company/company-package/company-package.module';
+import { PackageModule } from './module/shared/company/package/package.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -81,6 +84,8 @@ MailerModule.forRootAsync({
     PermissionsModule,
     ProfilesModule,
     FrontendUrlModule,
+    CompanyPackageModule,
+    PackageModule,
   ],
   controllers: [AppController, EmailController],
   providers: [AppService, JobApplicationModule],
