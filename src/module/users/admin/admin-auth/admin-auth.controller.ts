@@ -13,6 +13,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { JwtAuthGuard } from 'src/common/secret/jwt-auth.guard';
 import { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 
 const isProduction = process.env.COOKIES === 'production';
 
@@ -22,6 +23,7 @@ export class AdminAuthController {
   constructor(private readonly service: AdminAuthService) {}
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 30 } })
   async login(
     @Body() dto: AdminLoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -33,7 +35,7 @@ export class AdminAuthController {
       httpOnly: true,
       secure: isProduction, 
       sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 60 * 60 * 1000, // 1 hora
+      maxAge: 60 * 60 * 1000,
     });
 
     // Refresh token
@@ -41,7 +43,7 @@ export class AdminAuthController {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+      maxAge: 7 * 24 * 60 * 60 * 1000, 
     });
 
     return { user };
@@ -63,7 +65,7 @@ export class AdminAuthController {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 60 * 60 * 1000, // 1 hora
+      maxAge: 60 * 60 * 1000, 
     });
 
     return { success: true };

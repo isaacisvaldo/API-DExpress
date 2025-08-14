@@ -392,66 +392,75 @@ model ClientCompanyProfile {
 
 // Tabela de Pacotes
 model Package {
-  id              String           @id @default(uuid())
-  name            String  @unique// Ex: "Pacote Limpeza Essencial"
-  description     String?
-  employees       Int // Nº de Funcionários
-  hours           Int // Horas de Trabalho
-  cost            Float // Custo do Pacote
-  percentage      Float // Percentagem % (ex: 0.25 para 25%)
-  equivalent      Float // Salário Base por funcionário
-  baseSalary      Float
-  totalBalance    Float // Total do Saldo final do serviço
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id           String   @id @default(uuid())
+  name         String   @unique // Ex: "Pacote Limpeza Essencial"
+  description  String?
+  employees    Int // Nº de Funcionários
+  hours        Int // Horas de Trabalho
+  cost         Float // Custo do Pacote
+  percentage   Float // Percentagem % (ex: 0.25 para 25%)
+  equivalent   Float // Salário Base por funcionário
+  baseSalary   Float
+  totalBalance Float // Total do Saldo final do serviço
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   companyPackages CompanyPackage[]
 }
 
-// Tabela de Junção (Contrato de Pacote)
-model PaymentFrequency {
-  id      String @id @default(uuid())
-  name    String @unique // Ex: "Mensal", "Trimestral", etc.
-  label String
-   isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  CompanyPackage CompanyPackage[] // Relacionamento com CompanyPackage
-}
-
 // Tabela para os Métodos de Pagamento
 model PaymentMethod {
-  id      String @id @default(uuid())
-  name    String @unique // Ex: "TransferenciaBancaria", "CartaoCredito", etc.
-  label String
-   isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  CompanyPackage CompanyPackage[]
-}
+  id        String   @id @default(uuid())
+  name      String   @unique // Ex: "TransferenciaBancaria", "CartaoCredito", etc.
+  label     String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  Payment Payment[]
+}
 
 model CompanyPackage {
   id                     String @id @default(uuid())
   clientCompanyProfileId String
   packageId              String
+  agreedValue          Float
+  discountPercentage   Float                @default(0.0)
+  finalValue           Float
+  startDate            DateTime
+  endDate              DateTime
+  clientCompanyProfile ClientCompanyProfile @relation(fields: [clientCompanyProfileId], references: [id], onDelete: Cascade)
+  package              Package              @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  isActive             Boolean              @default(true)
 
-  // Campos de pagamento
-  agreedValue            Float
-  discountPercentage     Float @default(0.0)
-  finalValue             Float
-  paymentFrequencyId  String
-  paymentMethodId     String
-  paymentFrequency    PaymentFrequency @relation(fields: [paymentFrequencyId], references: [id])
-  paymentMethod       PaymentMethod    @relation(fields: [paymentMethodId], references: [id])
-  startDate              DateTime
-  endDate                DateTime
-  clientCompanyProfile   ClientCompanyProfile @relation(fields: [clientCompanyProfileId], references: [id], onDelete: Cascade)
-  package                Package              @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
-  isActive               Boolean              @default(true)
+  PaymentCompanyPackage PaymentCompanyPackage[]
+}
+
+model PaymentCompanyPackage {
+  companyPackageId String
+  paymentId        String
+  payment          Payment        @relation(fields: [paymentId], references: [id])
+  companyPackage   CompanyPackage @relation(fields: [companyPackageId], references: [id])
+  isActive         Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  @@id([paymentId, companyPackageId])
+}
+
+model Payment{
+  id              String        @id @default(uuid())
+  name            String
+  label           String
+  description     String
+  paymentMethodId String
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  PaymentCompanyPackage PaymentCompanyPackage[]
 }
 
 model Sector {
@@ -462,6 +471,7 @@ model Sector {
   createdAt DateTime               @default(now())
   updatedAt DateTime               @default(now()) @updatedAt
 }
+
 model User {
   id            String          @id @default(uuid())
   firstName     String

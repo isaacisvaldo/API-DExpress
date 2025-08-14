@@ -1,4 +1,4 @@
-import { Module, OnModuleInit } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { AppController } from './app.controller';
@@ -9,7 +9,6 @@ import { DistrictModule } from './module/shared/location/district/district.modul
 import { LocationModule } from './module/shared/location/location.module';
 import { ProfessionalModule } from './module/professional/professional.module';
 import { AdminModule } from './module/users/admin/admin.module';
-import { ClientsModule } from './module/users/clients/clients.module';
 import { CompanyModule } from './module/users/company/company.module';
 import { UsersModule } from './module/users/users.module';
 import { PrismaModule } from './common/prisma/prisma.module';
@@ -31,32 +30,41 @@ import { SectorModule } from './module/shared/sector/sector.module';
 import { PermissionsModule } from './module/shared/permissions/permissions.module';
 import { ProfilesModule } from './module/shared/roles/profiles.module';
 import { FrontendUrlModule } from './module/shared/config/frontend-url/frontend-url.module';
-
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { CompanyPackageModule } from './module/shared/company/company-package/company-package.module';
 import { PackageModule } from './module/shared/company/package/package.module';
+import { ClientsModule } from './module/users/clients/clients.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, 
+      isGlobal: true,
     }),
-MailerModule.forRootAsync({
-  inject: [ConfigService],
-  useFactory: (config: ConfigService) => ({
-    transport: {
-      host: config.get<string>('MAIL_HOST'),
-      port: config.get<number>('MAIL_PORT'),
-      secure: config.get<string>('MAIL_SECURE') === 'true', 
-      auth: {
-        user: config.get<string>('MAIL_USER'),
-        pass: config.get<string>('MAIL_PASS'),
+    MailerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        transport: {
+          host: config.get<string>('MAIL_HOST'),
+          port: config.get<number>('MAIL_PORT'),
+          secure: config.get<string>('MAIL_SECURE') === 'true',
+          auth: {
+            user: config.get<string>('MAIL_USER'),
+            pass: config.get<string>('MAIL_PASS'),
+          },
+        },
+        defaults: {
+          from: `"Suporte DExpress" <${config.get<string>('MAIL_USER')}>`,
+        },
+      }),
+    }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60,
+        limit: 10,
       },
-    },
-    defaults: {
-      from: `"Suporte DExpress" <${config.get<string>('MAIL_USER')}>`,
-    },
-  }),
-}),
+    ]),
+
     AuthModule,
     ProfessionalModule,
     CityModule,
@@ -88,8 +96,12 @@ MailerModule.forRootAsync({
     PackageModule,
   ],
   controllers: [AppController, EmailController],
-  providers: [AppService, JobApplicationModule],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
-export class AppModule {
-
-}
+export class AppModule {}

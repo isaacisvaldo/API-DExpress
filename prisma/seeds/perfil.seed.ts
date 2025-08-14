@@ -15,7 +15,7 @@ export const profilesData: Profile[] = [
     label: "Administrador Geral",
     description: "Acesso total ao sistema com a meta-permissão de 'Acesso Total'.",
     permissions: [
-      "FULL_ACCESS", 
+      "full.access", 
     ],
   },
   {

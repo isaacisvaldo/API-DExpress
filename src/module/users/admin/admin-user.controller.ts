@@ -3,11 +3,13 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Query, Unauthor
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';
 import { AdminUserService } from './admin-user.service';
 import { JwtAuthGuard } from 'src/common/secret/jwt-auth.guard';
-
+import { PermissionsGuard } from 'src/common/secret/permissions.guard';
+import { PermissionType } from 'src/common/enums/permission.type';
 import { FindAllDto } from 'src/common/pagination/find-all.dto';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { CreateAdminUserDto } from './dto/create-admin-user.dto.ts';
 import { UpdateAdminUserDto } from './dto/update-admin.dto';
+import { RequiredPermissions } from 'src/common';
 
 @ApiTags('Admin')
 @Controller('admin')
@@ -17,6 +19,8 @@ export class AdminUserController {
   constructor(private readonly service: AdminUserService) {}
 
   @Post("users")
+  @UseGuards(PermissionsGuard)
+  @RequiredPermissions(PermissionType.UsersCreate) 
   @ApiOperation({ summary: 'Cria um novo utilizador administrador' })
   @ApiResponse({ status: 201, description: 'Utilizador criado com sucesso' })
   async createAdmin(@Body() dto: CreateAdminUserDto, @Req() req: any) {
@@ -38,6 +42,8 @@ export class AdminUserController {
   }
 
   @Get("users")
+  @UseGuards(PermissionsGuard)
+  @RequiredPermissions(PermissionType.UsersView)
   @ApiOperation({ summary: 'Lista todos os utilizadores administradores com paginação' })
   @ApiOkResponse({ type: PaginatedDto, description: 'Lista paginada de utilizadores' })
   async findAll(@Query() query: FindAllDto) {
@@ -45,6 +51,8 @@ export class AdminUserController {
   }
 
   @Get(':id')
+  @UseGuards(PermissionsGuard)
+  @RequiredPermissions(PermissionType.UsersView)
   @ApiOperation({ summary: 'Busca um utilizador administrador pelo ID' })
   @ApiOkResponse({ description: 'Detalhes do utilizador' })
   @ApiResponse({ status: 404, description: 'Utilizador não encontrado' })
@@ -53,6 +61,8 @@ export class AdminUserController {
   }
 
   @Patch(':id')
+  @UseGuards(PermissionsGuard)
+  @RequiredPermissions(PermissionType.UsersUpdate)
   @ApiOperation({ summary: 'Atualiza um utilizador administrador' })
   @ApiOkResponse({ description: 'Utilizador atualizado com sucesso' })
   @ApiResponse({ status: 404, description: 'Utilizador não encontrado' })
@@ -61,6 +71,8 @@ export class AdminUserController {
   }
 
   @Delete('users/:id')
+  @UseGuards(PermissionsGuard)
+  @RequiredPermissions(PermissionType.UsersDelete)
   @ApiOperation({ summary: 'Deleta um utilizador administrador' })
   @ApiOkResponse({ description: 'Utilizador deletado com sucesso' })
   @ApiResponse({ status: 404, description: 'Utilizador não encontrado' })

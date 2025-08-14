@@ -5,6 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import { FrontendUrlService } from './module/shared/config/frontend-url/frontend-url.service';
+import { RateLimitExceptionFilter } from './common/filters/rate-limit-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -52,6 +53,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+   app.useGlobalFilters(new RateLimitExceptionFilter());
 
   await app.listen(process.env.PORT ?? 3000);
 }

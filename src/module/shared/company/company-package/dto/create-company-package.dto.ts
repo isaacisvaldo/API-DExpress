@@ -3,7 +3,7 @@ import {
   IsString,
   IsNotEmpty,
   IsDateString,
-  IsBoolean,
+  IsNumber, // Importe IsNumber para validar números
   IsOptional,
 } from 'class-validator';
 
@@ -26,9 +26,9 @@ export class CreateCompanyPackageDto {
 
   @ApiProperty({
     description: 'Data de início do contrato (formato ISO 8601, ex: YYYY-MM-DD).',
-    example: '2024-01-01T00:00:00.000Z', // ou '2024-01-01'
-    type: String, // Explicitly set type to String for Swagger UI date picker
-    format: 'date-time', // For Swagger UI to show date/time picker
+    example: '2024-01-01T00:00:00.000Z',
+    type: String,
+    format: 'date-time',
   })
   @IsDateString()
   @IsNotEmpty()
@@ -36,7 +36,7 @@ export class CreateCompanyPackageDto {
 
   @ApiProperty({
     description: 'Data de fim do contrato (formato ISO 8601, ex: YYYY-MM-DD).',
-    example: '2024-12-31T23:59:59.999Z', // ou '2024-12-31'
+    example: '2024-12-31T23:59:59.999Z',
     type: String,
     format: 'date-time',
   })
@@ -44,4 +44,29 @@ export class CreateCompanyPackageDto {
   @IsNotEmpty()
   endDate: Date;
 
+  @ApiProperty({
+    description: 'Valor acordado para o contrato.',
+    example: 1500.50,
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  agreedValue: number;
+
+  @ApiProperty({
+    description: 'Percentual de desconto aplicado ao valor acordado.',
+    example: 10.0,
+    required: false,
+    default: 0.0,
+  })
+  @IsNumber()
+  @IsOptional()
+  discountPercentage: number;
+
+  @ApiProperty({
+    description: 'Valor final a ser pago após o desconto.',
+    example: 1350.45,
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  finalValue: number;
 }
