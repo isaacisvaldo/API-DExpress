@@ -1,17 +1,55 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateJobApplicationDto } from './dto/create-job-application.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { JobApplicationStatus } from '@prisma/client';
 import { UpdateJobApplicationStatusDto } from './dto/update-status.dto';
 import { FilterJobApplicationDto } from './dto/filter-job-application.dto';
-
+import { testDomains } from 'src/util/test-domain';
+import * as dns from 'dns';
 
 @Injectable()
 export class JobApplicationService {
   constructor(private readonly prisma: PrismaService) {}
 
  async create(createDto: CreateJobApplicationDto) {
-    // 1. Verificação da existência de TODOS os IDs relacionados
+
+      const domain = createDto.email.split('@')[1];
+      
+        // 1. Verificação se o e-mail é de teste (nova verificação)
+        if (testDomains.includes(domain)) {
+          throw new BadRequestException('E-mails de teste não são permitidos.');
+        }
+        // 1. Validação do formato do e-mail
+        const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createDto.email);
+        if (!isValidFormat) {
+          throw new BadRequestException('Formato de e-mail inválido.');
+        }
+        // 2. Verificação do domínio (registros MX)
+      
+        try {
+          const mxRecords = await new Promise<dns.MxRecord[]>((resolve, reject) => {
+            dns.resolveMx(domain, (err, addresses) => {
+              if (err) {
+                // Se houver erro, rejeita a Promise
+                return reject(err);
+              }
+              // Se der certo, resolve a Promise com o array de registros
+              resolve(addresses);
+            });
+          });
+      
+          // Agora mxRecords é garantido ser um array,
+          // então a verificação do length funciona
+          if (mxRecords.length === 0) {
+            throw new BadRequestException('O domínio do e-mail não é válido.');
+          }
+        } catch (error) {
+         
+          throw new BadRequestException('O domínio do e-mail não é válido.');
+        }
+        
+
+      
+    // 2. Verificação da existência de TODOS os IDs relacionados
     // (Relacionamentos muitos-para-um)
     const [
       gender,
@@ -139,64 +177,91 @@ export class JobApplicationService {
 
   // Mantenha os outros métodos `findAll`, `findOne`, `remove`, etc. aqui.
   async findAll(filters: FilterJobApplicationDto) {
-  const {
-    fullName,
-    status,
-    cityId,
-    districtId,
-    page = 1,
-    limit = 10,
-  } = filters;
+    const {
+      fullName,
+      status,
+      cityId,
+      districtId,
+      desiredPositionId,
+      genderId,
+      highestDegreeId,
+      createdAtStart, // Novo
+      createdAtEnd,   // Novo
+      page = 1,
+      limit = 10,
+    } = filters;
 
-  const where: any = {
-    fullName: fullName ? { contains: fullName, mode: 'insensitive' } : undefined,
-    status: status || undefined,
-    location: {
-      cityId: cityId || undefined,
-      districtId: districtId || undefined,
-    },
-  };
+    // Constrói a cláusula `where` de forma dinâmica
+    const where: any = {
+      // Filtro por nome
+      ...(fullName && { fullName: { contains: fullName, mode: 'insensitive' } }),
 
-  const [data, total] = await Promise.all([
-    this.prisma.jobApplication.findMany({
-      where,
-      include: {
-        location: {
-          include: {
-            city: true,
-            district: true,
+      // Filtro por status
+      ...(status && { status: status }),
+
+      // Filtro por localização
+      ...(cityId && { location: { cityId: cityId } }),
+      ...(districtId && { location: { districtId: districtId } }),
+      
+      // Filtros por IDs de relacionamento
+      ...(desiredPositionId && { desiredPositionId: desiredPositionId }),
+      ...(genderId && { genderId: genderId }),
+      ...(highestDegreeId && { highestDegreeId: highestDegreeId }),
+
+      // Filtros por intervalo de data de criação
+      ...(createdAtStart && { createdAt: { gte: new Date(createdAtStart) } }),
+      ...(createdAtEnd && { createdAt: { lte: new Date(createdAtEnd) } }),
+    };
+    
+    // Adiciona o filtro de intervalo de datas de forma mais concisa
+    if (createdAtStart || createdAtEnd) {
+      where.createdAt = {};
+      if (createdAtStart) {
+        where.createdAt.gte = new Date(createdAtStart); // gte = greater than or equal
+      }
+      if (createdAtEnd) {
+        where.createdAt.lte = new Date(createdAtEnd); // lte = less than or equal
+      }
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.jobApplication.findMany({
+        where,
+        include: {
+          location: {
+            include: {
+              city: true,
+              district: true,
+            },
           },
-          
+          gender: true,
+          desiredPosition: true,
+          highestDegree: true,
+          maritalStatus: true,
+          experienceLevel: true,
+          generalAvailability: true,
+          languages: true,
+          skills: true,
+          courses: true,
+          ProfessionalExperience: true,
         },
-        gender: true,
-        desiredPosition: true,
-        highestDegree: true,
-        maritalStatus: true,
-        experienceLevel: true,
-        generalAvailability: true,
-        languages: true,
-        skills: true,
-        courses: true,
-        ProfessionalExperience: true,
-      },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: {
-        createdAt: 'desc',
-      },
-    }),
-    this.prisma.jobApplication.count({ where }),
-  ]);
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.jobApplication.count({ where }),
+    ]);
 
-  return {
-    data,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  };
-}
-
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 
   async findOne(id: string) {
     const application = await this.prisma.jobApplication.findUnique({
@@ -225,14 +290,7 @@ export class JobApplicationService {
     }
     return application;
   }
-/*
-  async update(id: string, updateDto: UpdateJobApplicationDto) {
-    return this.prisma.jobApplication.update({
-      where: { id },
-      data: updateDto,
-    });
-  }
-*/
+
   async remove(id: string) {
     return this.prisma.jobApplication.delete({
       where: { id },
@@ -242,6 +300,24 @@ async updateStatus(id: string, dto: UpdateJobApplicationStatusDto) {
   return this.prisma.jobApplication.update({
     where: { id },
     data: { status: dto.status },
+    include:{
+        location: {
+          include: {
+            city: true,
+            district: true,
+          },
+        },
+        gender: true,
+        desiredPosition: true,
+        highestDegree: true,
+        maritalStatus: true,
+        experienceLevel: true,
+        generalAvailability: true,
+        languages: true,
+        skills: true,
+        courses: true,
+        ProfessionalExperience: true,
+    }
   });
 }
 

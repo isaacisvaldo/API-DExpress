@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateProfessionalDto } from './dto/create-professional.dto';
 import { UpdateProfessionalDto } from './dto/update-professional.dto';
 import { FilterProfessionalDto } from './dto/filter-professional.dto'; 
 import { Professional, Prisma } from '@prisma/client';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto'; 
+import * as dns from 'dns';
+import { testDomains } from 'src/util/test-domain';
 
 @Injectable()
 export class ProfessionalService {
@@ -19,6 +21,47 @@ export class ProfessionalService {
       experienceIds,
       ...professionalData
     } = createProfessionalDto;
+   
+     const domain = createProfessionalDto.email.split('@')[1];
+    
+      // 1. Verificação se o e-mail é de teste (nova verificação)
+      if (testDomains.includes(domain)) {
+        throw new BadRequestException('E-mails de teste não são permitidos.');
+      }
+      // 1. Validação do formato do e-mail
+      const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createProfessionalDto.email);
+      if (!isValidFormat) {
+        throw new BadRequestException('Formato de e-mail inválido.');
+      }
+      // 2. Verificação do domínio (registros MX)
+    
+      try {
+        const mxRecords = await new Promise<dns.MxRecord[]>((resolve, reject) => {
+          dns.resolveMx(domain, (err, addresses) => {
+            if (err) {
+              // Se houver erro, rejeita a Promise
+              return reject(err);
+            }
+            // Se der certo, resolve a Promise com o array de registros
+            resolve(addresses);
+          });
+        });
+    
+        // Agora mxRecords é garantido ser um array,
+        // então a verificação do length funciona
+        if (mxRecords.length === 0) {
+          throw new BadRequestException('O domínio do e-mail não é válido.');
+        }
+      } catch (error) {
+        throw new BadRequestException('O domínio do e-mail não é válido.');
+      }
+      
+      // 3. Verificação de usuário existente
+      const existingUser = await this.findByEmail(createProfessionalDto.email);
+      if (existingUser) {
+        throw new BadRequestException('E-mail já cadastrado.');
+      }
+    
 
     return this.prisma.professional.create({
       data: {
@@ -330,6 +373,36 @@ export class ProfessionalService {
       }
       throw error;
     }
+  }
+    /**
+   * Busca um profissional pelo endereço de e-mail.
+   * @param email O e-mail do profissional a ser encontrado.
+   * @returns O objeto do profissional, incluindo suas relações, se encontrado.
+   * @throws NotFoundException se o profissional com o e-mail fornecido não for encontrado.
+   */
+  async findByEmail(email: string) {
+    const professional = await this.prisma.professional.findUnique({
+      where: { email },
+      include: {
+       location: { include: { city: true, district: true } },
+            desiredPosition: true,
+            gender: true,
+            jobApplication: true,
+            experienceLevel: true,
+            maritalStatus: true,
+            highestDegree: true,
+            professionalCourses: { include: { course: true } },
+            professionalLanguages: { include: { language: true } },
+            professionalSkills: { include: { skill: true } },
+            ProfessionalExperience: true,
+      },
+    });
+
+    if (!professional) {
+      throw new NotFoundException(`Professional with email "${email}" not found`);
+    }
+    
+    return professional;
   }
   /**
    * Atualiza especificamente o status de disponibilidade de um profissional.
