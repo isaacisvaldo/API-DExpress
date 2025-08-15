@@ -35,6 +35,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { CompanyPackageModule } from './module/shared/company/company-package/company-package.module';
 import { PackageModule } from './module/shared/company/package/package.module';
 import { ClientsModule } from './module/users/clients/clients.module';
+import { ServiceRequestModule } from './module/service-request/service-request.module';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { ClientsModule } from './module/users/clients/clients.module';
     FrontendUrlModule,
     CompanyPackageModule,
     PackageModule,
+    ServiceRequestModule,
   ],
   controllers: [AppController, EmailController],
   providers: [

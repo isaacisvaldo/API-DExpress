@@ -61,6 +61,7 @@ async function main() {
     'http://localhost:4200', 
     "http://localhost:5173",
     "https://back-office-d-express.vercel.app",
+    "https://web-site-d-express.vercel.app"
   ];
 
   for (const url of urls) {

@@ -35,7 +35,7 @@ export class AdminAuthController {
       httpOnly: true,
       secure: isProduction, 
       sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 60 * 60 * 1000,
+      maxAge: 8 * 60 * 60 * 1000,
     });
 
     // Refresh token
