@@ -42,5 +42,5 @@ export const internalPermissions = [
   { name: 'settings.update', label: 'Atualizar Configurações' },
   
   // Acesso total (meta permissão)
-  { name: 'FULL_ACCESS', label: 'Acesso Total' },
+  { name: 'full.access', label: 'Acesso Total' },
 ];

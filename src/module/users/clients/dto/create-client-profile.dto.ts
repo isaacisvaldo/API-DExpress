@@ -33,7 +33,7 @@ export class CreateClientProfileDto {
   })
   @IsOptional()
   @IsString({ message: 'O número de identificação deve ser uma string.' })
-  identityNumber?: string;
+  identityNumber: string;
 
   @ApiProperty({
     description: 'O número de telefone principal do cliente.',

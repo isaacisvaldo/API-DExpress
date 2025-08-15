@@ -321,7 +321,7 @@ model Location {
 
 model country {
   id          String   @id @default(uuid())
-  name        String @unique
+  name        String   @unique
   label       String
   isAvailable Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -351,48 +351,175 @@ model District {
 
   @@unique([name, cityId])
 }
-
+ enum StatusRequest {
+  PENDING 
+  IN_REVIEW 
+  PLAN_OFFERED 
+  CONTRACT_GENERATED 
+  COMPLETED 
+  REJECTED 
+}
+model ServiceRequest {
+  id                      String    @id @default(uuid())
+  // Requester Information (Captured from a Single Form)
+  requesterType           UserType    // "PESSOA_NORMAL" ou "EMPRESA"
+  requesterEmail          String    // E-mail de contacto
+  requesterPhoneNumber    String?
+  
+  // Specific Data for an Individual
+  individualRequesterName         String? // Nome da pessoa
+  individualIdentityNumber        String? // Número de identificação
+  individualAddress               String? // Morada da pessoa
+  individualUserId             String? // Id Do Utlizador
+  
+  // Specific Data for a Company
+  companyRequesterName    String? // Nome da empresa
+  companyNif              String? // NIF da empresa
+  companyAddress          String? // Morada da empresa
+  companyDistrictId       String? // Distrito da empresa
+  companySectorId         String? // Setor da empresa
+  
+  // Request Details
+  description             String // Descrição da solicitação
+  startDate               DateTime // Data de início do serviço
+  endDate                 DateTime // Data de fim do serviço
+  createdAt               DateTime  @default(now())
+  status                  StatusRequest @default(PENDING) // Estado da solicitação
+  
+  // Fields for the Service (only one is populated)
+  planId                  String? // ID do plano (para empresas)
+  professionalId          String? // ID do profissional (para pessoas normais)
+  
+  // Optional relations to client profiles (filled after registration)
+  individualClientId      String? // ID do cliente individual, após registo
+  individualClient        ClientProfile?      @relation(fields: [individualClientId], references: [id])
+  
+  companyClientId         String? // ID da empresa, após registo
+  companyClient           ClientCompanyProfile? @relation(fields: [companyClientId], references: [id])
+}
 model ClientProfile {
   id               String   @id @default(uuid())
   fullName         String
   email            String   @unique
-  identityNumber   String? // Nº BI
+  identityNumber   String
   phoneNumber      String
   optionalContacts String[]
   address          String
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  user             User?    @relation(fields: [userId], references: [id])
-  userId           String?  @unique
+  user             User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String  @unique
+  ServiceRequest ServiceRequest[]
 }
 
 // Informação da Residencia !
-
 //Informação do Contrato terá  id residencia, id cliente perfil, id profissional !
 // Assim, podemos vincular um cliente a uma residência e um profissional a uma residência
 // E também vincular um cliente a um profissional, e um profissional a uma residência
 // Com isso sera possivelfirmar uma contratação e saber que esta vinculado !
 model ClientCompanyProfile {
-  id              String   @id @default(uuid())
+  id              String           @id @default(uuid())
   companyName     String
   nif             String
-  email           String   @unique
+  email           String           @unique
   phoneNumber     String
   optionalContact String?
   address         String
-  district        District @relation(fields: [districtId], references: [id])
+  district        District         @relation(fields: [districtId], references: [id])
   districtId      String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  isActive        Boolean  @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  isActive        Boolean          @default(true)
   sectorId        String
-  sector          Sector   @relation(fields: [sectorId], references: [id])
+  sector          Sector           @relation(fields: [sectorId], references: [id])
+  packages        CompanyPackage[]
+
+  
+
+  ServiceRequest ServiceRequest[]
+}
+
+// Tabela de Pacotes
+model Package {
+  id           String   @id @default(uuid())
+  name         String   @unique // Ex: "Pacote Limpeza Essencial"
+  description  String?
+  employees    Int // Nº de Funcionários
+  hours        Int // Horas de Trabalho
+  cost         Float // Custo do Pacote
+  percentage   Float // Percentagem % (ex: 0.25 para 25%)
+  equivalent   Float // Salário Base por funcionário
+  baseSalary   Float
+  totalBalance Float // Total do Saldo final do serviço
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  companyPackages CompanyPackage[]
+}
+
+// Tabela para os Métodos de Pagamento
+model PaymentMethod {
+  id        String   @id @default(uuid())
+  name      String   @unique // Ex: "TransferenciaBancaria", "CartaoCredito", etc.
+  label     String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Payment Payment[]
+}
+
+enum StatusCompanyPackage {
+  EM_ANALISE
+
+}
+model CompanyPackage {
+  id                     String @id @default(uuid())
+  clientCompanyProfileId String
+  packageId              String
+  agreedValue          Float
+  discountPercentage   Float                @default(0.0)
+  finalValue           Float
+  startDate            DateTime
+  endDate              DateTime
+  clientCompanyProfile ClientCompanyProfile @relation(fields: [clientCompanyProfileId], references: [id], onDelete: Cascade)
+  package              Package              @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  isActive             Boolean              @default(true)
+  statusCompanyPackage StatusCompanyPackage @default(EM_ANALISE)
+  PaymentCompanyPackage PaymentCompanyPackage[]
+}
+
+model PaymentCompanyPackage {
+  companyPackageId String
+  paymentId        String
+  payment          Payment        @relation(fields: [paymentId], references: [id])
+  companyPackage   CompanyPackage @relation(fields: [companyPackageId], references: [id])
+  isActive         Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  @@id([paymentId, companyPackageId])
+}
+
+model Payment{
+  id              String        @id @default(uuid())
+  name            String
+  label           String
+  description     String
+  paymentMethodId String
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  PaymentCompanyPackage PaymentCompanyPackage[]
 }
 
 model Sector {
   id        String                 @id @default(uuid())
   name      String                 @unique
-  label String
+  label     String
   companies ClientCompanyProfile[]
   createdAt DateTime               @default(now())
   updatedAt DateTime               @default(now()) @updatedAt

@@ -141,6 +141,32 @@ async getDashboardSummary() {
     }
     return 30; 
   }
+  async getCompaniesBySector() {
+    // 1. Busque todos os perfis de empresas, incluindo o setor relacionado.
+    const companyProfiles = await this.prisma.clientCompanyProfile.findMany({
+      select: {
+        sector: {
+          select: {
+            label: true,
+          },
+        },
+      },
+    });
 
+    const sectorCount: { [key: string]: number } = {};
+    companyProfiles.forEach(profile => {
+      const sectorLabel = profile.sector?.label; 
+      if (sectorLabel) {
+        sectorCount[sectorLabel] = (sectorCount[sectorLabel] || 0) + 1;
+      }
+    });
+
+    const formattedData = Object.keys(sectorCount).map(sectorLabel => ({
+      sector: sectorLabel, 
+      companies: sectorCount[sectorLabel],
+    }));
+
+    return formattedData;
+  }
 
 }

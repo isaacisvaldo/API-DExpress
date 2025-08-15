@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get,Query } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
-import { parseISO, subDays } from 'date-fns';
+
 
 @Controller('dashboard')
 export class DashboardController {
@@ -21,9 +21,15 @@ export class DashboardController {
     };
   }
 
-
   @Get('companies-by-sector')
   async getCompaniesBySector() {
-    // Implemente a chamada para um método do serviço aqui
+ 
+    const data = await this.dashboardService.getCompaniesBySector();
+
+
+    return {
+      success: true,
+      data: data,
+    };
   }
 }

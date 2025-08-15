@@ -1,9 +1,7 @@
-
-
-import { IsOptional, IsString, IsEnum, IsNumber, Min } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNumber, Min, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { JobApplicationStatus } from '@prisma/client'; 
+import { JobApplicationStatus } from '@prisma/client';
 
 export class FilterJobApplicationDto {
   @ApiPropertyOptional({ description: 'Filtra por nome completo do candidato' })
@@ -40,6 +38,18 @@ export class FilterJobApplicationDto {
   @IsOptional()
   @IsString()
   highestDegreeId?: string;
+
+  // --- NOVOS CAMPOS PARA FILTRAR POR DATA DE CRIAÇÃO ---
+  @ApiPropertyOptional({ description: 'Data de início para filtrar candidaturas criadas a partir desta data (ISO 8601)', type: 'string', format: 'date-time' })
+  @IsOptional()
+  @IsDateString() // Valida que a string é uma data ISO 8601 válida
+  createdAtStart?: string;
+
+  @ApiPropertyOptional({ description: 'Data de fim para filtrar candidaturas criadas até esta data (ISO 8601)', type: 'string', format: 'date-time' })
+  @IsOptional()
+  @IsDateString() // Valida que a string é uma data ISO 8601 válida
+  createdAtEnd?: string;
+  // --- FIM DOS NOVOS CAMPOS ---
 
   @ApiPropertyOptional({ description: 'Número da página', minimum: 1 })
   @IsOptional()
