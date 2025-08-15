@@ -1,146 +1,424 @@
-// src/professional/professional.service.ts
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateProfessionalDto } from './dto/create-professional.dto';
-import { FilterProfessionalDto } from './dto/filter-professional.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { CreateAvailabilityDto } from './dto/create-availability.dto';
-
-import { JobApplicationStatus, Prisma } from '@prisma/client'; 
-
+import { CreateProfessionalDto } from './dto/create-professional.dto';
+import { UpdateProfessionalDto } from './dto/update-professional.dto';
+import { FilterProfessionalDto } from './dto/filter-professional.dto'; 
+import { Professional, Prisma } from '@prisma/client';
+import { PaginatedDto } from 'src/common/pagination/paginated.dto'; 
+import * as dns from 'dns';
+import { testDomains } from 'src/util/test-domain';
 
 @Injectable()
 export class ProfessionalService {
   constructor(private readonly prisma: PrismaService) {}
 
-async create(data: CreateProfessionalDto) {
-  const application = await this.prisma.jobApplication.findUnique({
-    where: { id: data.applicationId },
-    include: { location: true },
-  });
 
-   if (!application) {
-      throw new NotFoundException('Candidatura não encontrada.');
-    }
+  async create(createProfessionalDto: CreateProfessionalDto) {
+    const {
+      courseIds,
+      languageIds,
+      skillIds,
+      experienceIds,
+      ...professionalData
+    } = createProfessionalDto;
+   
+     const domain = createProfessionalDto.email.split('@')[1];
+    
+      // 1. Verificação se o e-mail é de teste (nova verificação)
+      if (testDomains.includes(domain)) {
+        throw new BadRequestException('E-mails de teste não são permitidos.');
+      }
+      // 1. Validação do formato do e-mail
+      const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createProfessionalDto.email);
+      if (!isValidFormat) {
+        throw new BadRequestException('Formato de e-mail inválido.');
+      }
+      // 2. Verificação do domínio (registros MX)
+    
+      try {
+        const mxRecords = await new Promise<dns.MxRecord[]>((resolve, reject) => {
+          dns.resolveMx(domain, (err, addresses) => {
+            if (err) {
+              // Se houver erro, rejeita a Promise
+              return reject(err);
+            }
+            // Se der certo, resolve a Promise com o array de registros
+            resolve(addresses);
+          });
+        });
+    
+        // Agora mxRecords é garantido ser um array,
+        // então a verificação do length funciona
+        if (mxRecords.length === 0) {
+          throw new BadRequestException('O domínio do e-mail não é válido.');
+        }
+      } catch (error) {
+        throw new BadRequestException('O domínio do e-mail não é válido.');
+      }
+      
+      // 3. Verificação de usuário existente
+      const existingUser = await this.findByEmail(createProfessionalDto.email);
+      if (existingUser) {
+        throw new BadRequestException('E-mail já cadastrado.');
+      }
+    
 
-    if (application.status !== JobApplicationStatus.ACCEPTED) {
-      throw new BadRequestException('A candidatura ainda não foi aprovada.');
-    }
-
-  return await this.prisma.professional.create({
-    data: {
-      fullName: application.fullName,
-      email: application.email,
-      phoneNumber: application.phoneNumber,
-      availabilityType: data.availabilityType,
-      experienceLevel: data.experienceLevel,
-      birthDate: application.birthDate,
-      maritalStatus: application.maritalStatus,
-      hasChildren: application.hasChildren,
-      knownDiseases: application.knownDiseases,
-      desiredPosition: application.desiredPosition as any, 
-      expectedSalary: data.expectedSalary,
-      highestDegree: application.highestDegree,
-      courses: application.courses,
-      languages: application.languages,
-      skillsAndQualities: application.skillsAndQualities,
-      specialties: {
-        connect: data.specialtyIds.map((id) => ({ id })),
-      },
-    location: {
-        connect: {
-          id: application.locationId,
-        },
-      },
-    },
-    include: {
-      specialties: true,
-      location: {
-        include: {
-          city: true,
-          district: true,
-        },
-      },
-    },
-  });
-}
-
-
-async findByFilters(filters: FilterProfessionalDto) {
-  const {
-    name,
-    cityId,
-    districtId,
-    availabilityType,
-    experienceLevel,
-    specialtyIds,
-    page = 1,
-    limit = 10,
-  } = filters;
-
-  const specialtiesFilter =
-    specialtyIds && specialtyIds.length > 0
-      ? {
-          some: {
-            id: Array.isArray(specialtyIds)
-              ? { in: specialtyIds }
-              : specialtyIds,
+    return this.prisma.professional.create({
+      data: {
+        ...professionalData,
+        
+        professionalCourses: courseIds && courseIds.length > 0 ? {
+          createMany: {
+            data: courseIds.map(courseId => ({ courseId })),
           },
-        }
-      : undefined;
-
-  const where: Prisma.ProfessionalWhereInput = {
-    fullName: name
-      ? {
-          contains: name,
-          mode: Prisma.QueryMode.insensitive, // ✅ CORRETO
-        }
-      : undefined,
-    availabilityType: availabilityType || undefined,
-    experienceLevel: experienceLevel || undefined,
-    location: {
-      cityId: cityId || undefined,
-      districtId: districtId || undefined,
-    },
-    specialties: specialtiesFilter,
-  };
-
-  const [data, total] = await Promise.all([
-    this.prisma.professional.findMany({
-      where,
+        } : undefined,
+        professionalLanguages: languageIds && languageIds.length > 0 ? {
+          createMany: {
+            data: languageIds.map(languageId => ({ languageId })),
+          },
+        } : undefined,
+        professionalSkills: skillIds && skillIds.length > 0 ? {
+          createMany: {
+            data: skillIds.map(skillId => ({ skillId })),
+          },
+        } : undefined,
+        ProfessionalExperience: experienceIds && experienceIds.length > 0 ? {
+          // Para um relacionamento muitos-para-muitos direto, a sintaxe `connect` funciona
+          connect: experienceIds.map(id => ({ id })),
+        } : undefined,
+      },
       include: {
-        specialties: true,
+        location: { include: { city: true, district: true } },
+        desiredPosition: true,
+        gender: true,
+        jobApplication: true,
+        experienceLevel: true,
         availability: true,
-        location: {
-          include: {
-            city: true,
-            district: true,
-          },
+        Document: true,
+        ProfessionalExperience: true,
+        professionalCourses: { include: { course: true } },
+        professionalLanguages: { include: { language: true } },
+        professionalSkills: { include: { skill: true } },
+        maritalStatus: true,
+        highestDegree: true,
+      },
+    });
+  }
+
+  // ... (findAll method - remains unchanged as it's correct for its purpose) ...
+
+  async findAll(filter: FilterProfessionalDto): Promise<PaginatedDto<Professional>> {
+    const page = filter.page || 1;
+    const limit = filter.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ProfessionalWhereInput = {
+      fullName: filter.name ? { contains: filter.name, mode: 'insensitive' } : undefined,
+      location: {
+        cityId: filter.cityId || undefined,
+        districtId: filter.districtId || undefined,
+      },
+      availabilityTypeId: filter.availabilityTypeId || undefined,
+      experienceLevelId: filter.experienceLevelId || undefined,
+      desiredPositionId: filter.desiredPositionId || undefined,
+      genderId: filter.genderId || undefined,
+      maritalStatusId: filter.maritalStatusId || undefined,
+      highestDegreeId: filter.highestDegreeId || undefined,
+      hasCriminalRecord: filter.hasCriminalRecord || undefined,
+      hasMedicalCertificate: filter.hasMedicalCertificate || undefined,
+      hasTrainingCertificate: filter.hasTrainingCertificate || undefined,
+      hasChildren: filter.hasChildren || undefined,
+
+      professionalCourses: filter.courseId ? { some: { courseId: filter.courseId } } : undefined,
+      professionalLanguages: filter.languageId ? { some: { languageId: filter.languageId } } : undefined,
+      professionalSkills: filter.skillId ? { some: { skillId: filter.skillId } } : undefined,
+      ProfessionalExperience: filter.experienceId ? { some: { id: filter.experienceId } } : undefined,
+    };
+
+    const [professionals, total] = await this.prisma.$transaction([
+      this.prisma.professional.findMany({
+        skip,
+        take: limit,
+        where,
+        include: {
+          location: { include: { city: true, district: true } },
+          desiredPosition: true,
+          gender: true,
+          jobApplication: true,
+          experienceLevel: true,
+          maritalStatus: true,
+          highestDegree: true,
+          availability: true,
+          Document: true,
+          ProfessionalExperience: true,
+          professionalCourses: { include: { course: true } },
+          professionalLanguages: { include: { language: true } },
+          professionalSkills: { include: { skill: true } },
         },
+      }),
+      this.prisma.professional.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: professionals,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+  }
+  async getPublicProfessionals(filter: FilterProfessionalDto): Promise<PaginatedDto<Professional>> {
+    const page = filter.page || 1;
+    const limit = filter.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ProfessionalWhereInput = {
+      fullName: filter.name ? { contains: filter.name, mode: 'insensitive' } : undefined,
+      location: {
+        cityId: filter.cityId || undefined,
+        districtId: filter.districtId || undefined,
       },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: {
-        createdAt: 'desc',
+      availabilityTypeId: filter.availabilityTypeId || undefined,
+      experienceLevelId: filter.experienceLevelId || undefined,
+      desiredPositionId: filter.desiredPositionId || undefined,
+      genderId: filter.genderId || undefined,
+      maritalStatusId: filter.maritalStatusId || undefined,
+      highestDegreeId: filter.highestDegreeId || undefined,
+      hasCriminalRecord: filter.hasCriminalRecord || undefined,
+      hasMedicalCertificate: filter.hasMedicalCertificate || undefined,
+      hasTrainingCertificate: filter.hasTrainingCertificate || undefined,
+      hasChildren: filter.hasChildren || undefined,
+
+      professionalCourses: filter.courseId ? { some: { courseId: filter.courseId } } : undefined,
+      professionalLanguages: filter.languageId ? { some: { languageId: filter.languageId } } : undefined,
+      professionalSkills: filter.skillId ? { some: { skillId: filter.skillId } } : undefined,
+      ProfessionalExperience: filter.experienceId ? { some: { id: filter.experienceId } } : undefined,
+      isAvailable:true
+    };
+
+    const [professionals, total] = await this.prisma.$transaction([
+      this.prisma.professional.findMany({
+        
+        skip,
+        take: limit,
+        where,
+        include: {
+          location: { include: { city: true, district: true } },
+          desiredPosition: true,
+          gender: true,
+          jobApplication: true,
+          experienceLevel: true,
+          maritalStatus: true,
+          highestDegree: true,
+          availability: true,
+          Document: true,
+          ProfessionalExperience: true,
+          professionalCourses: { include: { course: true } },
+          professionalLanguages: { include: { language: true } },
+          professionalSkills: { include: { skill: true } },
+        },
+      }),
+      this.prisma.professional.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: professionals,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+  }
+
+  // ... (findOne method - remains unchanged as it's correct for its purpose) ...
+
+  async findOne(id: string) {
+    const professional = await this.prisma.professional.findUnique({
+      where: { id },
+      include: {
+        location: { include: { city: true, district: true } },
+        desiredPosition: true,
+        gender: true,
+        jobApplication: true,
+        experienceLevel: true,
+        maritalStatus: true,
+        highestDegree: true,
+        availability: true,
+        Document: true,
+        ProfessionalExperience: true,
+        professionalCourses: { include: { course: true } },
+        professionalLanguages: { include: { language: true } },
+        professionalSkills: { include: { skill: true } },
       },
-    }),
-    this.prisma.professional.count({ where }),
-  ]);
+    });
+    if (!professional) {
+      throw new NotFoundException(`Professional with ID "${id}" not found`);
+    }
+    return professional;
+  }
 
-  return {
-    data,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  };
-}
+  
 
+  /**
+   * Atualiza um profissional existente. As relações many-to-many são sincronizadas.
+   * Para tabelas de junção explícitas, isso envolve deletar as entradas antigas
+   * e criar as novas.
+   * @param id O ID do profissional a ser atualizado (UUID em string).
+   * @param updateProfessionalDto O DTO com os dados a serem atualizados.
+   * @returns O profissional atualizado.
+   * @throws NotFoundException se o profissional não for encontrado.
+   */
+  async update(id: string, updateProfessionalDto: UpdateProfessionalDto) {
+    const {
+      courseIds,
+      languageIds,
+      skillIds,
+      experienceIds,
+      ...professionalData
+    } = updateProfessionalDto;
 
+    try {
+      // Use um $transaction para garantir que todas as operações sejam atômicas
+      return await this.prisma.$transaction(async (prisma) => {
+        // 1. Atualiza os dados diretos do profissional
+        const updatedProfessional = await prisma.professional.update({
+          where: { id },
+          data: {
+            ...professionalData,
+            // O relacionamento ProfessionalExperience é um many-to-many direto,
+            // então 'set' funciona aqui.
+            ProfessionalExperience: experienceIds && experienceIds.length > 0 ? {
+              set: experienceIds.map(experienceId => ({ id: experienceId })),
+            } : { set: [] },
+          },
+        });
 
-    async addAvailability(data: CreateAvailabilityDto) {
-    return this.prisma.availability.create({ data });
+        // 2. Sincroniza as tabelas de junção (ProfessionalCourses, ProfessionalLanguages, ProfessionalSkills)
+        // Para cada uma, deletamos as entradas antigas e criamos as novas.
+
+        // ProfessionalCourses
+        await prisma.professionalCourses.deleteMany({
+          where: { professionalId: id },
+        });
+        if (courseIds && courseIds.length > 0) {
+          await prisma.professionalCourses.createMany({
+            data: courseIds.map(courseId => ({ professionalId: id, courseId })),
+          });
+        }
+
+        // ProfessionalLanguages
+        await prisma.professionalLanguages.deleteMany({
+          where: { professionalId: id },
+        });
+        if (languageIds && languageIds.length > 0) {
+          await prisma.professionalLanguages.createMany({
+            data: languageIds.map(languageId => ({ professionalId: id, languageId })),
+          });
+        }
+
+        // ProfessionalSkills
+        await prisma.professionalSkills.deleteMany({
+          where: { professionalId: id },
+        });
+        if (skillIds && skillIds.length > 0) {
+          await prisma.professionalSkills.createMany({
+            data: skillIds.map(skillId => ({ professionalId: id, skillId })),
+          });
+        }
+
+        // 3. Retorna o profissional atualizado com as relações incluídas
+        return prisma.professional.findUnique({
+          where: { id },
+          include: {
+            location: { include: { city: true, district: true } },
+            desiredPosition: true,
+            gender: true,
+            jobApplication: true,
+            experienceLevel: true,
+            maritalStatus: true,
+            highestDegree: true,
+            professionalCourses: { include: { course: true } },
+            professionalLanguages: { include: { language: true } },
+            professionalSkills: { include: { skill: true } },
+            ProfessionalExperience: true,
+          },
+        });
+      });
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(`Professional with ID "${id}" not found`);
+      }
+      throw error;
+    }
   }
 
 
-}
 
+  /**
+   * Remove um profissional do banco de dados.
+   * @param id O ID do profissional a ser removido (UUID em string).
+   * @returns O profissional que foi removido.
+   * @throws NotFoundException se o profissional não for encontrado.
+   */
+  async remove(id: string) {
+    try {
+      return await this.prisma.professional.delete({ where: { id } });
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(`Professional with ID "${id}" not found`);
+      }
+      throw error;
+    }
+  }
+    /**
+   * Busca um profissional pelo endereço de e-mail.
+   * @param email O e-mail do profissional a ser encontrado.
+   * @returns O objeto do profissional, incluindo suas relações, se encontrado.
+   * @throws NotFoundException se o profissional com o e-mail fornecido não for encontrado.
+   */
+  async findByEmail(email: string) {
+    const professional = await this.prisma.professional.findUnique({
+      where: { email },
+      include: {
+       location: { include: { city: true, district: true } },
+            desiredPosition: true,
+            gender: true,
+            jobApplication: true,
+            experienceLevel: true,
+            maritalStatus: true,
+            highestDegree: true,
+            professionalCourses: { include: { course: true } },
+            professionalLanguages: { include: { language: true } },
+            professionalSkills: { include: { skill: true } },
+            ProfessionalExperience: true,
+      },
+    });
+
+    if (!professional) {
+      throw new NotFoundException(`Professional with email "${email}" not found`);
+    }
+    
+    return professional;
+  }
+  /**
+   * Atualiza especificamente o status de disponibilidade de um profissional.
+   * @param id O ID do profissional.
+   * @param isAvailable O novo estado de disponibilidade (true ou false).
+   * @returns O objeto Professional atualizado.
+   */
+  async updateAvailability(id: string, isAvailable: boolean): Promise<Professional> {
+    const professional = await this.prisma.professional.findUnique({ where: { id } });
+    if (!professional) {
+      throw new NotFoundException(`Profissional com ID "${id}" não encontrado.`);
+    }
+
+    return this.prisma.professional.update({
+      where: { id },
+      data: { isAvailable }, 
+    });
+  }
+}

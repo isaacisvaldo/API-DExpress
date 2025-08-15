@@ -7,10 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Gender {
-  MALE
-  FEMALE
-  
+model FrontendUrl {
+  id        String   @id @default(uuid())
+  url       String   @unique
+  label     String   @default("---")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum DocumentType {
@@ -20,21 +22,6 @@ enum DocumentType {
   MEDICAL_CERTIFICATE // Atestado Médico
   PHOTO // Foto de Perfil
   OTHER // Outro
-}
-
-enum GeneralAvailability {
-  FULL_TIME
-  PART_TIME
-  DAILY
-  WEEKENDS
-  ANY
-}
-
-enum ExperienceLevel {
-  LESS_THAN_1
-  ONE_TO_THREE
-  THREE_TO_FIVE
-  MORE_THAN_FIVE
 }
 
 enum Weekday {
@@ -48,8 +35,8 @@ enum Weekday {
 }
 
 enum UserType {
-  CLIENT // Pessoa física
-  COMPANY // Pessoa jurídica
+  INDIVIDUAL // Para pessoas físicas
+  CORPORATE // Para empresas
 }
 
 enum JobApplicationStatus {
@@ -60,91 +47,240 @@ enum JobApplicationStatus {
   REJECTED
 }
 
-enum MaritalStatus {
-  SINGLE // Solteiro(a)
-  MARRIED // Casado(a)
-  DIVORCED // Divorciado(a)
-  WIDOWED // Viúvo(a)
-  SEPARATED // Separado(a)
-  STABLE_UNION // União Estável
-}
-
-enum DesiredPosition {
-  BABYSITTER // Babá
-  HOUSEKEEPER // Diarista / Empregada doméstica
-  COOK // Cozinheira
-  CAREGIVER // Cuidadora de idosos ou pessoas especiais
-  GARDENER // Jardineiro
-  IRONING // Passadeira
-  CLEANING_ASSISTANT // Auxiliar de limpeza
-  OTHER // Outro (cargo personalizado)
-}
-
 model JobApplication {
   id                     String               @id @default(uuid())
   locationId             String
   fullName               String
-  identityNumber         String // Nº BI
+  identityNumber         String
   phoneNumber            String
   optionalPhoneNumber    String?
-  gender Gender  @default(MALE)
+  desiredPositionId      String
   email                  String
-  birthDate              DateTime
-  maritalStatus          MaritalStatus // Estado Civil
+  birthDate              String
+  genderId               String
+  highestDegreeId        String
+  maritalStatusId        String?
+  experienceLevelId      String?
+  generalAvailabilityId  String?
   hasChildren            Boolean
   knownDiseases          String? // Doenças
-  desiredPosition        DesiredPosition // Cargo
-  languages              String[] // Idiomas
-  availabilityDate       DateTime // Data de disponibilidade para início
-  professionalExperience String // Experiência Profissional
-  highestDegree          String // Grau mais elevado concluído
-  courses                String[] // Cursos
-  skillsAndQualities     String[] // Habilidades e Qualidades
-  status                 JobApplicationStatus @default(PENDING)
+  availabilityDate       String
+  ProfessionalExperience Experience[]
+  desiredPosition        DesiredPosition      @relation(fields: [desiredPositionId], references: [id])
+  gender                 Gender               @relation(fields: [genderId], references: [id])
   location               Location             @relation(fields: [locationId], references: [id])
+  status                 JobApplicationStatus @default(PENDING)
+  highestDegree          HighestDegree        @relation(fields: [highestDegreeId], references: [id])
+  maritalStatus          MaritalStatus?       @relation(fields: [maritalStatusId], references: [id])
+  experienceLevel        ExperienceLevel?     @relation(fields: [experienceLevelId], references: [id])
+  generalAvailability    GeneralAvailability? @relation(fields: [generalAvailabilityId], references: [id])
+  // Relacionamentos Many-to-Many nativos
+  languages              Language[]
+  skills                 Skill[]
+  courses                Course[]
+  professional           Professional[]
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @updatedAt
 }
 
 model Professional {
-  id                     String                   @id @default(uuid()) // Identificador único do profissional
-  fullName               String // Nome completo do profissional
-  email                  String                   @unique // Email do profissional (único)
-  phoneNumber            String // Número de telefone
-  isAvailable            Boolean                  @default(false) // Indica se o profissional está disponível para ser contratado
-  availabilityType       GeneralAvailability // Tipo de disponibilidade geral (tempo integral, parcial, etc.)
-  experienceLevel        ExperienceLevel // Nível de experiência do profissional
-  specialties            Specialty[]              @relation("ProfessionalSpecialties") // Especialidades atribuídas ao profissional
-  availability           Availability[] // Dias e horários disponíveis do profissional
-  location               Location                 @relation(fields: [locationId], references: [id]) // Localização atual
-  locationId             String // ID da localização
+  id                     String                  @id @default(uuid())
+  fullName               String
+  email                  String                  @unique
+  phoneNumber            String
+  identityNumber         String?
+  isAvailable            Boolean                 @default(false)
+  description            String?
+  expectedAvailability   DateTime?
+  hasCriminalRecord      Boolean                 @default(false)
+  hasMedicalCertificate  Boolean                 @default(false)
+  hasTrainingCertificate Boolean                 @default(false)
+  locationId             String
   profileImage           String?
-  gender Gender  @default(MALE)
-  birthDate              DateTime                 @default(now()) // Data de nascimento
-  maritalStatus          String                   @default("Não informado") // Estado civil
-  hasChildren            Boolean                  @default(false) // Indica se o profissional tem filhos
-  knownDiseases          String? // Informações sobre doenças conhecidas (opcional)
-  desiredPosition        DesiredPosition          @default(HOUSEKEEPER) // Cargo desejado (ex: babá, diarista)
-  expectedSalary         Int                      @default(0) // Pretensão salarial
-  highestDegree          String                   @default("Não informado") // Grau acadêmico mais elevado concluído
-  courses                String[]                 @default([]) // Cursos realizados
-  languages              String[]                 @default([]) // Idiomas que o profissional fala
-  skillsAndQualities     String[]                 @default([]) // Habilidades e qualidades
-  createdAt              DateTime                 @default(now()) // Data de criação do registro
-  updatedAt              DateTime                 @updatedAt // Data da última atualização do registro
+  genderId               String
+  birthDate              DateTime                @default(now())
+  hasChildren            Boolean                 @default(false)
+  knownDiseases          String?
+  expectedSalary         Int                     @default(0)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  jobApplicationId       String?                 @unique
+  desiredPositionId      String
+  availabilityTypeId     String
+  experienceLevelId      String
+  // Relações
+  desiredPosition        DesiredPosition         @relation(fields: [desiredPositionId], references: [id])
+  gender                 Gender                  @relation(fields: [genderId], references: [id])
+  jobApplication         JobApplication?         @relation(fields: [jobApplicationId], references: [id])
+  location               Location                @relation(fields: [locationId], references: [id])
+  experienceLevel        ExperienceLevel         @relation(fields: [experienceLevelId], references: [id])
+  availability           Availability[]
   Document               Document[]
-  ProfessionalExperience ProfessionalExperience[]
+  ProfessionalExperience Experience[]
+  professionalCourses    ProfessionalCourses[]
+  professionalLanguages  ProfessionalLanguages[]
+  professionalSkills     ProfessionalSkills[]
+  maritalStatus          MaritalStatus?          @relation(fields: [maritalStatusId], references: [id])
+  maritalStatusId        String?
+  highestDegree          HighestDegree?          @relation(fields: [highestDegreeId], references: [id])
+  highestDegreeId        String?
 }
 
-model ProfessionalExperience {
-  id             String       @id @default(uuid()) // ID único do documento
+model GeneralAvailability {
+  id             String           @id @default(uuid())
+  name           String           @unique
+  label          String
+  JobApplication JobApplication[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now()) @updatedAt
+}
+
+model ExperienceLevel {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  label         String
+  professionals Professional[]
+
+  JobApplication JobApplication[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now()) @updatedAt
+}
+
+model Gender {
+  id            String         @id @default(uuid())
+  name          String         @unique // Ex: MALE
+  label         String
+  professionals Professional[]
+  AdminUser     AdminUser[]
+
+  jobApplication JobApplication[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now()) @updatedAt
+}
+
+model MaritalStatus {
+  id            String         @id @default(uuid())
+  name          String         @unique // Ex: SINGLE
+  label         String // Ex: "Solteiro"
+  professionals Professional[]
+
+  JobApplication JobApplication[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now()) @updatedAt
+}
+
+model HighestDegree {
+  id            String         @id @default(uuid())
+  name          String         @unique // Ex: BACHELOR
+  label         String // Ex: "Graduação"
+  level         Int // Para ordenação (1, 2, 3...)
+  professionals Professional[]
+
+  JobApplication JobApplication[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now()) @updatedAt
+}
+
+model DesiredPosition {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  description   String?
+  label         String?
+  professionals Professional[]
+
+  JobApplication JobApplication[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now()) @updatedAt
+}
+
+// ----------------------------------------------------
+// Tabela de Junção para Cursos
+// ----------------------------------------------------
+model Course {
+  id                  String                @id @default(uuid())
+  name                String                @unique // Ex: "Primeiros Socorros"
+  label               String?
+  // Relacionamento inverso com a tabela de junção
+  professionalCourses ProfessionalCourses[]
+  JobApplication      JobApplication[]
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @default(now()) @updatedAt
+}
+
+//A tabela intermediária que une o Professional com o Course
+model ProfessionalCourses {
+  professionalId String
+  courseId       String
   professional   Professional @relation(fields: [professionalId], references: [id])
-  professionalId String // ID do profissional vinculado
+  course         Course       @relation(fields: [courseId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+
+  @@id([professionalId, courseId])
+}
+
+// ----------------------------------------------------
+// Tabela de Junção para Idiomas
+// ----------------------------------------------------
+model Language {
+  id    String  @id @default(uuid())
+  name  String  @unique // Ex: "Português"
+  label String?
+
+  // Relacionamento inverso com a tabela de junção
+  professionalLanguages ProfessionalLanguages[]
+
+  JobApplication JobApplication[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now()) @updatedAt
+}
+
+// A tabela intermediária que une o Professional com o Language
+model ProfessionalLanguages {
+  professionalId String
+  languageId     String
+  level          String? // Campo extra para adicionar nível (ex: 'Fluente', 'Intermediário')
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  language       Language     @relation(fields: [languageId], references: [id])
+
+  @@id([professionalId, languageId])
+}
+
+// ----------------------------------------------------
+// Tabela de Junção para Habilidades
+// ----------------------------------------------------
+model Skill {
+  id                 String               @id @default(uuid())
+  name               String               @unique
+  label              String?
+  // Relacionamento inverso com a tabela de junção
+  professionalSkills ProfessionalSkills[]
+
+  JobApplication JobApplication[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now()) @updatedAt
+}
+
+// A tabela intermediária que une o Professional com a Skill
+model ProfessionalSkills {
+  professionalId String
+  skillId        String
+
+  professional Professional @relation(fields: [professionalId], references: [id])
+  skill        Skill        @relation(fields: [skillId], references: [id])
+
+  @@id([professionalId, skillId])
+}
+
+model Experience {
+  id             String           @id @default(uuid())
   localTrabalho  String
   cargo          String
   tempo          String
-  createdAt      DateTime     @default(now()) // Data de criação
-  updatedAt      DateTime     @updatedAt // Data da última atualização
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now()) @updatedAt
+  jobApplication JobApplication[]
+  Professional   Professional[]
 }
 
 model Document {
@@ -155,14 +291,6 @@ model Document {
   url            String // URL do arquivo/documento
   createdAt      DateTime     @default(now()) // Data de criação
   updatedAt      DateTime     @updatedAt // Data da última atualização
-}
-
-model Specialty {
-  id            String         @id @default(uuid())
-  name          String         @unique
-  professionals Professional[] @relation("ProfessionalSpecialties")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
 }
 
 model Availability {
@@ -183,107 +311,291 @@ model Location {
   district       District         @relation(fields: [districtId], references: [id])
   districtId     String
   street         String?
-  professionals  Professional[] // One location → many professionals
-  jobApplication JobApplication[] // One location → many jobApplication
+  lat            Float?
+  lng            Float?
+  professionals  Professional[]
+  jobApplication JobApplication[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 }
 
+model country {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  label       String
+  isAvailable Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+}
+
 model City {
-  id        String     @id @default(uuid())
-  name      String     @unique
-  districts District[]
-  locations Location[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id          String     @id @default(uuid())
+  name        String     @unique
+  districts   District[]
+  locations   Location[]
+  isAvailable Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now()) @updatedAt
 }
 
 model District {
-  id        String     @id @default(uuid())
-  name      String
-  city      City       @relation(fields: [cityId], references: [id])
-  cityId    String
-  locations Location[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id                   String                 @id @default(uuid())
+  name                 String
+  city                 City                   @relation(fields: [cityId], references: [id])
+  cityId               String
+  locations            Location[]
+  isAvailable          Boolean                @default(true)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @default(now()) @updatedAt
+  ClientCompanyProfile ClientCompanyProfile[]
 
   @@unique([name, cityId])
 }
-
+ enum StatusRequest {
+  PENDING 
+  IN_REVIEW 
+  PLAN_OFFERED 
+  CONTRACT_GENERATED 
+  COMPLETED 
+  REJECTED 
+}
+model ServiceRequest {
+  id                      String    @id @default(uuid())
+  // Requester Information (Captured from a Single Form)
+  requesterType           UserType    // "PESSOA_NORMAL" ou "EMPRESA"
+  requesterEmail          String    // E-mail de contacto
+  requesterPhoneNumber    String?
+  
+  // Specific Data for an Individual
+  individualRequesterName         String? // Nome da pessoa
+  individualIdentityNumber        String? // Número de identificação
+  individualAddress               String? // Morada da pessoa
+  individualUserId             String? // Id Do Utlizador
+  
+  // Specific Data for a Company
+  companyRequesterName    String? // Nome da empresa
+  companyNif              String? // NIF da empresa
+  companyAddress          String? // Morada da empresa
+  companyDistrictId       String? // Distrito da empresa
+  companySectorId         String? // Setor da empresa
+  
+  // Request Details
+  description             String // Descrição da solicitação
+  startDate               DateTime // Data de início do serviço
+  endDate                 DateTime // Data de fim do serviço
+  createdAt               DateTime  @default(now())
+  status                  StatusRequest @default(PENDING) // Estado da solicitação
+  
+  // Fields for the Service (only one is populated)
+  planId                  String? // ID do plano (para empresas)
+  professionalId          String? // ID do profissional (para pessoas normais)
+  
+  // Optional relations to client profiles (filled after registration)
+  individualClientId      String? // ID do cliente individual, após registo
+  individualClient        ClientProfile?      @relation(fields: [individualClientId], references: [id])
+  
+  companyClientId         String? // ID da empresa, após registo
+  companyClient           ClientCompanyProfile? @relation(fields: [companyClientId], references: [id])
+}
 model ClientProfile {
   id               String   @id @default(uuid())
   fullName         String
   email            String   @unique
-  identityNumber   String? // Nº BI
+  identityNumber   String
   phoneNumber      String
   optionalContacts String[]
   address          String
-  // Um ClientProfile pode ter 1 usuário (login)
-  user             User?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String  @unique
+  ServiceRequest ServiceRequest[]
 }
 
 // Informação da Residencia !
-
 //Informação do Contrato terá  id residencia, id cliente perfil, id profissional !
 // Assim, podemos vincular um cliente a uma residência e um profissional a uma residência
 // E também vincular um cliente a um profissional, e um profissional a uma residência
 // Com isso sera possivelfirmar uma contratação e saber que esta vinculado !
-model CompanyProfile {
-  id              String  @id @default(uuid())
+model ClientCompanyProfile {
+  id              String           @id @default(uuid())
   companyName     String
   nif             String
-  email           String  @unique
+  email           String           @unique
   phoneNumber     String
   optionalContact String?
   address         String
-  state           String
-  //Uma CompanyProfile pode ter 1 usuário (login)
-  user            User?
+  district        District         @relation(fields: [districtId], references: [id])
+  districtId      String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  isActive        Boolean          @default(true)
+  sectorId        String
+  sector          Sector           @relation(fields: [sectorId], references: [id])
+  packages        CompanyPackage[]
+
+  
+
+  ServiceRequest ServiceRequest[]
+}
+
+// Tabela de Pacotes
+model Package {
+  id           String   @id @default(uuid())
+  name         String   @unique // Ex: "Pacote Limpeza Essencial"
+  description  String?
+  employees    Int // Nº de Funcionários
+  hours        Int // Horas de Trabalho
+  cost         Float // Custo do Pacote
+  percentage   Float // Percentagem % (ex: 0.25 para 25%)
+  equivalent   Float // Salário Base por funcionário
+  baseSalary   Float
+  totalBalance Float // Total do Saldo final do serviço
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  companyPackages CompanyPackage[]
+}
+
+// Tabela para os Métodos de Pagamento
+model PaymentMethod {
+  id        String   @id @default(uuid())
+  name      String   @unique // Ex: "TransferenciaBancaria", "CartaoCredito", etc.
+  label     String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Payment Payment[]
+}
+
+enum StatusCompanyPackage {
+  EM_ANALISE
+
+}
+model CompanyPackage {
+  id                     String @id @default(uuid())
+  clientCompanyProfileId String
+  packageId              String
+  agreedValue          Float
+  discountPercentage   Float                @default(0.0)
+  finalValue           Float
+  startDate            DateTime
+  endDate              DateTime
+  clientCompanyProfile ClientCompanyProfile @relation(fields: [clientCompanyProfileId], references: [id], onDelete: Cascade)
+  package              Package              @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  isActive             Boolean              @default(true)
+  statusCompanyPackage StatusCompanyPackage @default(EM_ANALISE)
+  PaymentCompanyPackage PaymentCompanyPackage[]
+}
+
+model PaymentCompanyPackage {
+  companyPackageId String
+  paymentId        String
+  payment          Payment        @relation(fields: [paymentId], references: [id])
+  companyPackage   CompanyPackage @relation(fields: [companyPackageId], references: [id])
+  isActive         Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  @@id([paymentId, companyPackageId])
+}
+
+model Payment{
+  id              String        @id @default(uuid())
+  name            String
+  label           String
+  description     String
+  paymentMethodId String
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  PaymentCompanyPackage PaymentCompanyPackage[]
+}
+
+model Sector {
+  id        String                 @id @default(uuid())
+  name      String                 @unique
+  label     String
+  companies ClientCompanyProfile[]
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @default(now()) @updatedAt
 }
 
 model User {
-  id               String          @id @default(uuid())
-  email            String          @unique
-  password         String
-  isActive         Boolean         @default(true)
-  type             UserType        @default(CLIENT) // CLIENT ou COMPANY
-  // Cada User pode estar associado a UM perfil de cliente ou UM perfil de empresa
-  clientProfileId  String?         @unique
-  companyProfileId String?         @unique
-  clientProfile    ClientProfile?  @relation(fields: [clientProfileId], references: [id])
-  companyProfile   CompanyProfile? @relation(fields: [companyProfileId], references: [id])
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  id            String          @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String          @unique
+  password      String
+  isActive      Boolean         @default(true)
+  type          UserType        @default(INDIVIDUAL)
+  avatar        String          @default("user.png")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  clientProfile ClientProfile[]
 }
 
 model AdminUser {
-  id             String       @id @default(uuid())
-  name           String
-  numberphone    String
-  isActive       Boolean      @default(true)
-  identityNumber String       @unique
-  gender Gender  
-  birthDate      DateTime
-  email          String       @unique
-  password       String
-  role           InternalRole
-  permissions    Permission[] @relation("AdminPermissions")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                   String                 @id @default(uuid())
+  name                 String
+  numberphone          String
+  isActive             Boolean                @default(true)
+  identityNumber       String                 @unique
+  gender               Gender?                @relation(fields: [genderId], references: [id])
+  birthDate            DateTime
+  email                String                 @unique
+  password             String
+  avatar               String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  notificationSettings NotificationSettings[]
+  securitySettings     SecuritySettings[]
+  genderId             String?
+  profile              Profile                @relation(fields: [profileId], references: [id])
+  profileId            String // A restrição '@unique' foi removida
+  address              String                 @default("---")
+  isRoot               Boolean                @default(false)
 }
 
-enum InternalRole {
-  GENERAL_ADMIN
-  OPERATIONS_MANAGER
-  HR_COORDINATOR
-  QUALITY_SUPERVISOR
-  CUSTOMER_ASSISTANT
-  FINANCIAL
-  INTERNAL_AUDITOR
+// Novo modelo Profile para gerir perfis de utilizador.
+// Este modelo armazena as permissões e é associado a um AdminUser.
+model Profile {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  label       String
+  description String?
+  adminUser   AdminUser[] // Agora um array, pois pode ter vários usuários
+  permissions Permission[] @relation("ProfilePermissions")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
+// O model Permission agora tem uma relação many-to-many com o novo modelo Profile.
 model Permission {
-  id     String      @id @default(uuid())
-  name   String      @unique
-  admins AdminUser[] @relation("AdminPermissions")
+  id       String    @id @default(uuid())
+  name     String    @unique
+  label    String    @default("---")
+  profiles Profile[] @relation("ProfilePermissions")
+}
+
+model SecuritySettings {
+  id                 String    @id @default(uuid())
+  userId             String    @unique
+  loginNotifications Boolean   @default(true)
+  lastPasswordChange DateTime?
+  adminUser          AdminUser @relation(fields: [userId], references: [id])
+}
+
+model NotificationSettings {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  email     Boolean   @default(true)
+  push      Boolean   @default(false)
+  marketing Boolean   @default(true)
+  weekly    Boolean   @default(true)
+  adminUser AdminUser @relation(fields: [userId], references: [id])
 }

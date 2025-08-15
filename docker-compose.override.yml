@@ -1,16 +1,10 @@
 version: '3.8'
 
 services:
-  app:
-    build: .
-    container_name: dev_app
-    command: npm run start:dev
+  dev_app:
     volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
-    ports:
-      - "3000:3000"
-    depends_on:
-      - postgres
+      - .:/usr/src/app          # Monta o código local
+      - /usr/src/app/node_modules # Evita sobrescrever node_modules
     environment:
-      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/dev_db?schema=public"
+      CHOKIDAR_USEPOLLING: "true"  # Para o hot reload (necessário em Windows e WSL)
+      CHOKIDAR_INTERVAL: 500

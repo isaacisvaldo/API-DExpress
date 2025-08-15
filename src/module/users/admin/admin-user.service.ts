@@ -1,98 +1,287 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from 'src/common/prisma/prisma.service';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from 'src/common/prisma/prisma.service'; // Ajuste o caminho conforme o seu projeto
 import * as bcrypt from 'bcrypt';
 
 import { MailerService } from '@nestjs-modules/mailer';
+import { AdminUser, Prisma } from '@prisma/client';
+import { FindAllDto } from 'src/common/pagination/find-all.dto';
+import { PaginatedDto } from 'src/common/pagination/paginated.dto';
+
+import { UpdateAdminUserDto } from './dto/update-admin.dto';
 import { CreateAdminUserDto } from './dto/create-admin-user.dto.ts';
 
 @Injectable()
 export class AdminUserService {
   constructor(private readonly prisma: PrismaService, private readonly mailerService: MailerService) {}
 
-  async create(dto: CreateAdminUserDto, creatorId: string) {
-    // Verifica se quem cria é um Admin Geral
+  /**
+   * Cria um novo utilizador administrador.
+   * Apenas o Admin Geral pode executar esta ação.
+   * @param dto DTO com os dados do novo administrador.
+   * @param creatorId ID do utilizador que está a criar.
+   * @returns Mensagem de sucesso e o ID do novo administrador.
+   */
+  async create(dto: CreateAdminUserDto, creatorId: string,originDomain:any) {
+    // 1. Verifica se quem cria é um Admin Geral
     const creator = await this.prisma.adminUser.findUnique({ where: { id: creatorId } });
-    if (!creator || creator.role !== 'GENERAL_ADMIN') {
+    if (!creator) {
       throw new ForbiddenException('Somente o Admin Geral pode criar novos administradores.');
     }
 
-    // Verifica duplicidade de email ou identidade
+    // 2. Verifica duplicidade de email ou identidade
     const existing = await this.prisma.adminUser.findFirst({
       where: { OR: [{ email: dto.email }, { identityNumber: dto.identityNumber }] },
     });
-    if (existing) throw new ForbiddenException('Administrador já existe com este email ou número de identidade.');
+    if (existing) {
+      throw new ForbiddenException('Administrador já existe com este email ou número de identidade.');
+    }
 
-    // Gera senha caso não tenha
+    // 3. Verifica se o perfil existe
+    const profile = await this.prisma.profile.findUnique({ where: { id: dto.profileId } });
+    if (!profile) {
+      throw new NotFoundException(`Perfil com o ID "${dto.profileId}" não encontrado.`);
+    }
+
+    // 4. Gera senha segura caso não tenha sido fornecida
     const password = dto.password || Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Cria admin
+    // 5. Cria o novo admin na base de dados, conectando ao perfil
     const newAdmin = await this.prisma.adminUser.create({
       data: {
         name: dto.name,
         numberphone: dto.numberphone,
         identityNumber: dto.identityNumber,
-        gender: dto.gender,
+        genderId: dto.genderId,
         birthDate: dto.birthDate,
         email: dto.email,
         password: hashedPassword,
-        role: dto.role,
-        permissions: dto.permissions
-          ? { connectOrCreate: dto.permissions.map((p) => ({ where: { name: p }, create: { name: p } })) }
-          : undefined,
+       
+        profileId: dto.profileId,
       },
-      include: { permissions: true },
+      include: { 
+        profile: { include: { permissions: true } }, 
+        gender: true 
+      },
     });
 
-    // Envia email
- 
-    await this.sendAdminWelcomeEmail(newAdmin.email, password);
+    // 6. Envia o email de boas-vindas
+    await this.sendAdminWelcomeEmail(newAdmin.email, password,originDomain,profile.label);
     return { message: 'Administrador criado com sucesso', id: newAdmin.id };
   }
-  async sendAdminWelcomeEmail(adminEmail: string, tempPassword: string) {
-       const dashboardUrl = process.env.DASHBOARD_URL || 'http://localhost:3000/admin';
-       const htmlContent = `
-  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; background: #f7f9fc; border-radius: 8px; padding: 20px; color: #333;">
-    <div style="text-align: center; margin-bottom: 20px;">
-         <div style="font-size: 50px; text-align: center;">🛠️</div>
-    </div>
-    <div style="background-color: #051f42ff; padding: 15px; border-radius: 8px 8px 0 0; text-align: center;">
-      <h1 style="color: #ffffff; margin: 0; font-size: 22px;">Acesso ao Painel Administrativo</h1>
-    </div>
-    <div style="padding: 20px; background: #ffffff; border: 1px solid #e5e7eb;">
-      <p style="font-size: 16px;">Olá,</p>
-      <p style="font-size: 16px;">
-        Sua conta de <strong>Administrador DExpress</strong> foi criada com sucesso!  
-        Utilize as credenciais abaixo para acessar o painel administrativo.
-      </p>
+  
+  /**
+   * Busca e retorna dados do perfil de um administrador.
+   * @param userId ID do administrador.
+   * @returns Objeto com os dados do perfil, sem a senha.
+   */
+  async getProfileData(userId: string) {
+    if (!userId) {
+      throw new ForbiddenException('Utilizador não autenticado ou ID inválido');
+    }
+    
+    const admin = await this.prisma.adminUser.findUnique({
+      where: { id: userId },
+      include: { 
+        profile: {
+          
+          include: {
+            permissions: true,
+          },
+        },
+        
+      
+        notificationSettings: true, 
+        securitySettings: true,
+        gender: true, 
+      },
+    });
 
-      <div style="background: #f3f4f6; padding: 15px; border-radius: 5px; margin: 15px 0; font-size: 16px;">
-        <strong>E-mail:</strong> ${adminEmail} <br/>
-        <strong>Senha Temporária:</strong> ${tempPassword}
-      </div>
+    if (!admin) {
+      throw new ForbiddenException('Administrador não encontrado');
+    }
 
-      <p style="font-size: 15px;">
-        Por questões de segurança, altere sua senha assim que acessar o sistema.
-      </p>
+    // Monta a resposta (escondendo a senha por segurança)
+  return admin
+  }
+  
+  /**
+   * Busca todos os utilizadores administradores com paginação e filtro.
+   * @param query DTO com os parâmetros de pesquisa, página e limite.
+   * @returns Lista paginada de utilizadores.
+   */
+  async findAll(query: FindAllDto): Promise<PaginatedDto<AdminUser>> {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const skip = (page - 1) * limit;
 
-      <a href="${dashboardUrl}" 
-      style="display: inline-block; background-color: #051f42ff; color: #ffffff; padding: 12px 24px; 
-                text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px; margin-top: 20px;"
-      target="_blank">
-        Acessar Painel
-      </a>
+    const where: Prisma.AdminUserWhereInput = query.search
+      ? {
+          OR: [
+            { name: { contains: query.search, mode: 'insensitive' } },
+            { email: { contains: query.search, mode: 'insensitive' } },
+          ],
+        }
+      : {};
 
-      <p style="margin-top: 30px; font-size: 13px; color: #6b7280;">
-        Este e-mail é automático. Não responda a esta mensagem.
-      </p>
-    </div>
-  </div>`;
+    const [users, total] = await this.prisma.$transaction([
+      this.prisma.adminUser.findMany({
+        skip,
+        take: limit,
+        where,
+        include: {
+          gender: true,
+          profile: true, // ✅ Incluindo o perfil
+        },
+      }),
+      this.prisma.adminUser.count({ where }),
+    ]);
 
-  await this.mailerService.sendMail({
-    to: adminEmail,
-    subject: 'Credenciais do Painel Administrativo - DExpress',
-    html: htmlContent,
-  });
-}
+    const totalPages = Math.ceil(total / limit);
 
+    return {
+      data: users,
+      total,
+      page,
+      limit,
+      totalPages,
+    } as PaginatedDto<AdminUser>;
+  }
+
+  /**
+   * Busca um único utilizador administrador pelo ID.
+   * @param id ID do utilizador.
+   * @returns O objeto do utilizador.
+   */
+  async findOne(id: string): Promise<AdminUser> {
+    const user = await this.prisma.adminUser.findUnique({
+      where: { id },
+      include: {
+        gender: true,
+        profile: true, // ✅ Incluindo o perfil
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Utilizador com o ID "${id}" não encontrado`);
+    }
+    return user;
+  }
+
+  /**
+   * Atualiza um utilizador administrador.
+   * @param id ID do utilizador.
+   * @param updateAdminUserDto DTO com os dados a serem atualizados.
+   * @returns O objeto do utilizador atualizado.
+   */
+  async update(id: string, updateAdminUserDto: UpdateAdminUserDto): Promise<AdminUser> {
+    const updateData: Prisma.AdminUserUpdateInput = {};
+
+    // 1. Processa todos os campos do DTO, exceto profileId
+    for (const [key, value] of Object.entries(updateAdminUserDto)) {
+        if (value !== undefined && key !== 'profileId') {
+            updateData[key as keyof Prisma.AdminUserUpdateInput] = value;
+        }
+    }
+
+    // 2. Se o profileId estiver presente no DTO, trate-o separadamente
+    if (updateAdminUserDto.profileId) {
+        // Verifica se o perfil existe
+        const profile = await this.prisma.profile.findUnique({ where: { id: updateAdminUserDto.profileId } });
+        if (!profile) {
+            throw new NotFoundException(`Perfil com o ID "${updateAdminUserDto.profileId}" não encontrado.`);
+        }
+        // ✅ Corrigido: Conecta o perfil usando a sintaxe de relação
+        updateData.profile = { connect: { id: updateAdminUserDto.profileId } };
+    }
+    
+    try {
+      return await this.prisma.adminUser.update({
+        where: { id },
+        data: updateData,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`Utilizador com o ID "${id}" não encontrado`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Remove um utilizador administrador.
+   * @param id ID do utilizador.
+   * @returns O objeto do utilizador removido.
+   */
+  async remove(id: string): Promise<AdminUser> {
+    try {
+
+       const adminDelete=  await this.prisma.adminUser.findUnique({
+        where:{
+          id
+        }
+        
+       })
+       if(adminDelete?.isRoot) throw new NotFoundException(`Utilizador "${adminDelete?.name}" Nãoo pode ser Deletado`);
+      return await this.prisma.adminUser.delete({
+        where: { id },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`Utilizador com o ID "${id}" não encontrado`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Envia um email de boas-vindas com credenciais temporárias para o administrador.
+   * @param adminEmail O email do administrador.
+   * @param tempPassword A senha temporária.
+   */
+  async sendAdminWelcomeEmail(adminEmail: string, tempPassword: string,originDomain:any,perfil:string) {
+    const dashboardUrl = originDomain
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; background: #f7f9fc; border-radius: 8px; padding: 20px; color: #333;">
+        <div style="text-align: center; margin-bottom: 20px;">
+              <div style="font-size: 50px; text-align: center;">🛠️</div>
+        </div>
+        <div style="background-color: #051f42ff; padding: 15px; border-radius: 8px 8px 0 0; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px;">Acesso ao Painel Administrativo</h1>
+        </div>
+        <div style="padding: 20px; background: #ffffff; border: 1px solid #e5e7eb;">
+          <p style="font-size: 16px;">Olá,</p>
+          <p style="font-size: 16px;">
+            Sua conta de <strong>${perfil}</strong> foi criada com sucesso!  
+            Utilize as credenciais abaixo para acessar o painel administrativo.
+          </p>
+
+          <div style="background: #f3f4f6; padding: 15px; border-radius: 5px; margin: 15px 0; font-size: 16px;">
+            <strong>E-mail:</strong> ${adminEmail} <br/>
+            <strong>Senha Temporária:</strong> ${tempPassword}
+          </div>
+
+          <p style="font-size: 15px;">
+            Por questões de segurança, altere sua senha assim que acessar o sistema.
+          </p>
+
+          <a href="${dashboardUrl}" 
+          style="display: inline-block; background-color: #051f42ff; color: #ffffff; padding: 12px 24px; 
+                      text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px; margin-top: 20px;"
+          target="_blank">
+            Acessar Painel
+          </a>
+
+          <p style="margin-top: 30px; font-size: 13px; color: #6b7280;">
+            Este e-mail é automático. Não responda a esta mensagem.
+          </p>
+        </div>
+      </div>`;
+
+    await this.mailerService.sendMail({
+      to: adminEmail,
+      subject: 'Credenciais do Painel Administrativo - DExpress',
+      html: htmlContent,
+    });
+  }
 }

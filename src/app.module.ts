@@ -1,53 +1,76 @@
-import { Module, OnModuleInit } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule } from './module/auth/auth.module';
 import { JobApplicationModule } from './module/job-application/job-application.module';
-import { CityModule } from './module/location/city/city.module';
-import { DistrictModule } from './module/location/district/district.module';
-import { LocationModule } from './module/location/location.module';
+import { CityModule } from './module/shared/location/city/city.module';
+import { DistrictModule } from './module/shared/location/district/district.module';
+import { LocationModule } from './module/shared/location/location.module';
 import { ProfessionalModule } from './module/professional/professional.module';
-import { SpecialtyModule } from './module/specialties/specialties.module';
 import { AdminModule } from './module/users/admin/admin.module';
-import { ClientsModule } from './module/users/clients/clients.module';
 import { CompanyModule } from './module/users/company/company.module';
 import { UsersModule } from './module/users/users.module';
-import { UsersService } from './module/users/users.service';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { AdminAuthModule } from './module/users/admin/admin-auth/admin-auth.module';
-import { AdminSeeder } from 'prisma/seeds/admin.seeder';
+import { EmailController } from './module/shared/Email/email.controller';
+import { UploadModule } from './module/shared/upload/upload.module';
+import { DesiredPositionModule } from './module/shared/desired-position/desired-position.module';
+import { GenderModule } from './module/shared/gender/gender.module';
+import { MaritalStatusModule } from './module/shared/marital-status/marital-status.module';
+import { HighestDegreeModule } from './module/shared/highest-degree/highest-degree.module';
+import { CourseModule } from './module/shared/course/course.module';
+import { LanguageModule } from './module/shared/language/language.module';
+import { SkillModule } from './module/shared/skill/skill.module';
+import { AuthModule } from './module/shared/auth/auth.module';
+import { DashboardModule } from './module/dashboard/dashboard.module';
+import { GeneralAvailabilityModule } from './module/shared/general-availability/general-availability.module';
+import { ExperienceLevelModule } from './module/shared/experience-level/experience-level.module';
+import { SectorModule } from './module/shared/sector/sector.module';
+import { PermissionsModule } from './module/shared/permissions/permissions.module';
+import { ProfilesModule } from './module/shared/roles/profiles.module';
+import { FrontendUrlModule } from './module/shared/config/frontend-url/frontend-url.module';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { CompanyPackageModule } from './module/shared/company/company-package/company-package.module';
+import { PackageModule } from './module/shared/company/package/package.module';
+import { ClientsModule } from './module/users/clients/clients.module';
+import { ServiceRequestModule } from './module/service-request/service-request.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, 
+      isGlobal: true,
     }),
-MailerModule.forRootAsync({
-  inject: [ConfigService],
-  useFactory: (config: ConfigService) => ({
-    transport: {
-      host: config.get<string>('MAIL_HOST'),
-      port: config.get<number>('MAIL_PORT'),
-      secure: config.get<string>('MAIL_SECURE') === 'true', 
-      auth: {
-        user: config.get<string>('MAIL_USER'),
-        pass: config.get<string>('MAIL_PASS'),
+    MailerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        transport: {
+          host: config.get<string>('MAIL_HOST'),
+          port: config.get<number>('MAIL_PORT'),
+          secure: config.get<string>('MAIL_SECURE') === 'true',
+          auth: {
+            user: config.get<string>('MAIL_USER'),
+            pass: config.get<string>('MAIL_PASS'),
+          },
+        },
+        defaults: {
+          from: `"Suporte DExpress" <${config.get<string>('MAIL_USER')}>`,
+        },
+      }),
+    }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60,
+        limit: 10,
       },
-    },
-    defaults: {
-      from: `"Suporte DExpress" <${config.get<string>('MAIL_USER')}>`,
-    },
-  }),
-}),
+    ]),
 
     AuthModule,
     ProfessionalModule,
     CityModule,
     DistrictModule,
     LocationModule,
-    SpecialtyModule,
     JobApplicationModule,
     ClientsModule,
     CompanyModule,
@@ -55,14 +78,32 @@ MailerModule.forRootAsync({
     UsersModule,
     AdminAuthModule,
     PrismaModule,
+    UploadModule,
+    DesiredPositionModule,
+    GenderModule,
+    MaritalStatusModule,
+    HighestDegreeModule,
+    CourseModule,
+    LanguageModule,
+    SkillModule,
+    DashboardModule,
+    GeneralAvailabilityModule,
+    ExperienceLevelModule,
+    SectorModule,
+    PermissionsModule,
+    ProfilesModule,
+    FrontendUrlModule,
+    CompanyPackageModule,
+    PackageModule,
+    ServiceRequestModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, JobApplicationModule, UsersService,AdminSeeder],
+  controllers: [AppController, EmailController],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
-export class AppModule implements OnModuleInit {
-  constructor(private readonly adminSeeder: AdminSeeder) {}
-
-  async onModuleInit() {
-    await this.adminSeeder.seed();
-  }
-}
+export class AppModule {}

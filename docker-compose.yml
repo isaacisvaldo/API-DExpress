@@ -26,5 +26,16 @@ services:
     depends_on:
       - postgres
 
+  dev_app:
+    build: .
+    container_name: dev_app
+    command: npm run start:dev
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+
 volumes:
   postgres_data:
