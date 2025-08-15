@@ -10,12 +10,12 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiOkResponse } from '@nestjs/swagger';
 
-import { FindAllDto } from 'src/common/pagination/find-all.dto';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { ServiceRequest } from '@prisma/client';
 import { ServiceRequestService } from './service-request.service';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
+import { FilterServiceRequestsDto } from './dto/filter-service-requests.dto';
 
 @ApiTags('Service Requests')
 @Controller('service-requests')
@@ -36,7 +36,10 @@ export class ServiceRequestController {
   @Get()
   @ApiOperation({ summary: 'Lista todas as solicitações de serviço com paginação e pesquisa.' })
   @ApiOkResponse({ type: PaginatedDto, description: 'Lista de solicitações paginada.' })
-  findAll(@Query() query: FindAllDto): Promise<PaginatedDto<ServiceRequest>> {
+  findAll(@Query() query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequest>> {
+
+    console.log(query);
+    
     return this.serviceRequestService.findAll(query);
   }
 

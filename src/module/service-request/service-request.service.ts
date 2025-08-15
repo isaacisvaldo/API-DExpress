@@ -13,12 +13,13 @@ import { ServiceRequest, Prisma, UserType } from '@prisma/client';
 import { MailerService } from '@nestjs-modules/mailer';
 import { testDomains } from 'src/util/test-domain';
 import * as dns from 'dns';
+import { FilterServiceRequestsDto } from './dto/filter-service-requests.dto';
 @Injectable()
 export class ServiceRequestService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailerService: MailerService,
-  ) {}
+  ) { }
 
   /**
    * Cria uma nova solicitação de serviço no sistema, com base nos dados
@@ -53,46 +54,46 @@ export class ServiceRequestService {
     if (!requesterEmail) {
       throw new BadRequestException('O e-mail do solicitante é obrigatório.');
     }
-     const domain = requesterEmail.split('@')[1];
-    
-      // 1. Verificação se o e-mail é de teste (nova verificação)
-      if (testDomains.includes(domain)) {
-        throw new BadRequestException('E-mails de teste não são permitidos.');
-      }
-    
-    
-    
-      // 1. Validação do formato do e-mail
-      const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requesterEmail);
-      if (!isValidFormat) {
-        throw new BadRequestException('Formato de e-mail inválido.');
-      }
-    
-      // 2. Verificação do domínio (registros MX)
-    
-      try {
-        const mxRecords = await new Promise<dns.MxRecord[]>((resolve, reject) => {
-          dns.resolveMx(domain, (err, addresses) => {
-            if (err) {
-              // Se houver erro, rejeita a Promise
-              return reject(err);
-            }
-            // Se der certo, resolve a Promise com o array de registros
-            resolve(addresses);
-          });
+    const domain = requesterEmail.split('@')[1];
+
+    // 1. Verificação se o e-mail é de teste (nova verificação)
+    if (testDomains.includes(domain)) {
+      throw new BadRequestException('E-mails de teste não são permitidos.');
+    }
+
+
+
+    // 1. Validação do formato do e-mail
+    const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requesterEmail);
+    if (!isValidFormat) {
+      throw new BadRequestException('Formato de e-mail inválido.');
+    }
+
+    // 2. Verificação do domínio (registros MX)
+
+    try {
+      const mxRecords = await new Promise<dns.MxRecord[]>((resolve, reject) => {
+        dns.resolveMx(domain, (err, addresses) => {
+          if (err) {
+            // Se houver erro, rejeita a Promise
+            return reject(err);
+          }
+          // Se der certo, resolve a Promise com o array de registros
+          resolve(addresses);
         });
-    
-        // Agora mxRecords é garantido ser um array,
-        // então a verificação do length funciona
-        if (mxRecords.length === 0) {
-          throw new BadRequestException('O domínio do e-mail não é válido.');
-        }
-      } catch (error) {
-        // Este bloco de catch vai capturar erros como ENODATA, ENOTFOUND, etc.
-        // que significam que o domínio não tem registros MX ou não existe.
+      });
+
+      // Agora mxRecords é garantido ser um array,
+      // então a verificação do length funciona
+      if (mxRecords.length === 0) {
         throw new BadRequestException('O domínio do e-mail não é válido.');
       }
-      
+    } catch (error) {
+      // Este bloco de catch vai capturar erros como ENODATA, ENOTFOUND, etc.
+      // que significam que o domínio não tem registros MX ou não existe.
+      throw new BadRequestException('O domínio do e-mail não é válido.');
+    }
+
 
     // 2. Prepara os dados de acordo com o tipo de requerente
     const requestData: Prisma.ServiceRequestCreateInput = {
@@ -106,12 +107,18 @@ export class ServiceRequestService {
     };
 
     if (requesterType === UserType.INDIVIDUAL) {
-       const user = await this.prisma.user.findUnique({
-        where:{
-          id:individualUserId
+      const user = await this.prisma.user.findUnique({
+        where: {
+          id: individualUserId
         }
-       })
-       if(!user) throw new ForbiddenException("Solicitante Não Identificado")
+      })
+      const professional = await this.prisma.professional.findUnique({
+        where: {
+          id: professionalId
+        }
+      })
+      if (!user) throw new ForbiddenException("Solicitante Não Identificado")
+      if (!professional) throw new BadRequestException("Profissional Não encontrado")
 
       Object.assign(requestData, {
         individualRequesterName,
@@ -121,6 +128,24 @@ export class ServiceRequestService {
         professionalId,
       });
     } else if (requesterType === UserType.CORPORATE) {
+      const District = await this.prisma.district.findUnique({
+        where: {
+          id: companyDistrictId
+        }
+      })
+      const Sector = await this.prisma.sector.findUnique({
+        where: {
+          id: companySectorId
+        }
+      })
+      const plan = await this.prisma.package.findUnique({
+        where: {
+          id: planId
+        }
+      })
+      if (!District) throw new ForbiddenException("Distrito Não encontrado")
+      if (!Sector) throw new ForbiddenException("Sector Não encontrado")
+      if (!plan) throw new ForbiddenException("Plano Não Identificado")
       Object.assign(requestData, {
         companyRequesterName,
         companyNif,
@@ -153,45 +178,66 @@ export class ServiceRequestService {
    * @param query DTO com os parâmetros de consulta.
    * @returns Um objeto paginado com a lista de solicitações.
    */
-  async findAll(query: FindAllDto): Promise<PaginatedDto<ServiceRequest>> {
-    const page = query.page || 1;
-    const limit = query.limit || 10;
-    const skip = (page - 1) * limit;
 
-    const searchWhere: Prisma.ServiceRequestWhereInput = query.search
-      ? {
-          OR: [
-            { requesterEmail: { contains: query.search, mode: 'insensitive' } },
-            { description: { contains: query.search, mode: 'insensitive' } },
-            { individualRequesterName: { contains: query.search, mode: 'insensitive' } },
-            { companyRequesterName: { contains: query.search, mode: 'insensitive' } },
-          ],
-        }
-      : {};
 
-    const [requests, total] = await this.prisma.$transaction([
-      this.prisma.serviceRequest.findMany({
-        skip,
-        take: limit,
-        where: searchWhere,
-        include: {
-          individualClient: true,
-          companyClient: true,
-        },
-      }),
-      this.prisma.serviceRequest.count({ where: searchWhere }),
-    ]);
+async findAll(query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequest>> {
+  const page = query.page || 1;
+  const limit = query.limit || 10;
+  const skip = (page - 1) * limit;
 
-    const totalPages = Math.ceil(total / limit);
+  console.log(query);
 
-    return {
-      data: requests,
-      total,
-      page,
-      limit,
-      totalPages,
-    };
-  }
+  // Combine todas as condições de filtro
+  const filtersWhere: Prisma.ServiceRequestWhereInput = {
+    // Filtro de busca (search)
+    ...(query.search && {
+      OR: [
+        { requesterEmail: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+        { individualRequesterName: { contains: query.search, mode: 'insensitive' } },
+        { companyRequesterName: { contains: query.search, mode: 'insensitive' } },
+      ],
+    }),
+
+    // Filtro por tipo de solicitante (requesterType)
+    ...(query.requesterType && {
+      requesterType: query.requesterType,
+    }),
+
+    // Filtro por status
+    ...(query.status && {
+      status: query.status,
+    }),
+
+    // Filtro por descrição (se necessário)
+    ...(query.description && {
+      description: { contains: query.description, mode: 'insensitive' },
+    }),
+  };
+
+  const [requests, total] = await this.prisma.$transaction([
+    this.prisma.serviceRequest.findMany({
+      skip,
+      take: limit,
+      where: filtersWhere,
+      include: {
+        individualClient: true,
+        companyClient: true,
+      },
+    }),
+    this.prisma.serviceRequest.count({ where: filtersWhere }),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    data: requests,
+    total,
+    page,
+    limit,
+    totalPages,
+  };
+}
 
   /**
    * Busca uma única solicitação de serviço pelo seu ID.
