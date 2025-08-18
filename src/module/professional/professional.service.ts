@@ -255,9 +255,7 @@ export class ProfessionalService {
         professionalSkills: { include: { skill: true } },
       },
     });
-    if (!professional) {
-      throw new NotFoundException(`Professional with ID "${id}" not found`);
-    }
+
     return professional;
   }
 
@@ -398,9 +396,7 @@ export class ProfessionalService {
       },
     });
 
-    if (!professional) {
-      throw new NotFoundException(`Professional with email "${email}" not found`);
-    }
+ 
     
     return professional;
   }
