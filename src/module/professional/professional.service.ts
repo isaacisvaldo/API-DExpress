@@ -417,4 +417,16 @@ export class ProfessionalService {
       data: { isAvailable }, 
     });
   }
+
+    async updateImageUrl(id: string, profileImage: string): Promise<Professional> {
+    const professional = await this.prisma.professional.findUnique({ where: { id } });
+    if (!professional) {
+      throw new NotFoundException(`Profissional com ID "${id}" não encontrado.`);
+    }
+
+    return this.prisma.professional.update({
+      where: { id },
+      data: { profileImage }, 
+    });
+  }
 }
