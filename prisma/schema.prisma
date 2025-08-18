@@ -277,9 +277,9 @@ model Experience {
   localTrabalho  String
   cargo          String
   tempo          String
-  description   String @default("---")
-  startDate    String @default("---")
-  endDate       String @default("---")
+  description   String? @default("---")
+  startDate    String? @default("---")
+  endDate       String? @default("---")
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @default(now()) @updatedAt
   jobApplication JobApplication[]
