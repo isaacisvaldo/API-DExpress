@@ -185,8 +185,6 @@ async findAll(query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequ
   const limit = query.limit || 10;
   const skip = (page - 1) * limit;
 
-  console.log(query);
-
   // Combine todas as condições de filtro
   const filtersWhere: Prisma.ServiceRequestWhereInput = {
     // Filtro de busca (search)

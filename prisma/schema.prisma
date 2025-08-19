@@ -277,6 +277,9 @@ model Experience {
   localTrabalho  String
   cargo          String
   tempo          String
+  description   String? @default("---")
+  startDate    String? @default("---")
+  endDate       String? @default("---")
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @default(now()) @updatedAt
   jobApplication JobApplication[]
@@ -442,19 +445,16 @@ model ClientCompanyProfile {
 // Tabela de Pacotes
 model Package {
   id           String   @id @default(uuid())
-  name         String   @unique // Ex: "Pacote Limpeza Essencial"
+  name         String   @unique
   description  String?
-  employees    Int // Nº de Funcionários
-  hours        Int // Horas de Trabalho
-  cost         Float // Custo do Pacote
-  percentage   Float // Percentagem % (ex: 0.25 para 25%)
-  equivalent   Float // Salário Base por funcionário
-  baseSalary   Float
-  totalBalance Float // Total do Saldo final do serviço
+  employees    Int
+   price    Float @default(0.0) 
+  isPopular    Boolean  @default(false)
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
+  // Campo para armazenar as informações adicionais como um array de objetos
+  details Json?
   companyPackages CompanyPackage[]
 }
 

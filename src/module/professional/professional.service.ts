@@ -255,9 +255,7 @@ export class ProfessionalService {
         professionalSkills: { include: { skill: true } },
       },
     });
-    if (!professional) {
-      throw new NotFoundException(`Professional with ID "${id}" not found`);
-    }
+
     return professional;
   }
 
@@ -398,9 +396,7 @@ export class ProfessionalService {
       },
     });
 
-    if (!professional) {
-      throw new NotFoundException(`Professional with email "${email}" not found`);
-    }
+ 
     
     return professional;
   }
@@ -419,6 +415,18 @@ export class ProfessionalService {
     return this.prisma.professional.update({
       where: { id },
       data: { isAvailable }, 
+    });
+  }
+
+    async updateImageUrl(id: string, profileImage: string): Promise<Professional> {
+    const professional = await this.prisma.professional.findUnique({ where: { id } });
+    if (!professional) {
+      throw new NotFoundException(`Profissional com ID "${id}" não encontrado.`);
+    }
+
+    return this.prisma.professional.update({
+      where: { id },
+      data: { profileImage }, 
     });
   }
 }

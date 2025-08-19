@@ -14,7 +14,7 @@ import { UsersModule } from './module/users/users.module';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { AdminAuthModule } from './module/users/admin/admin-auth/admin-auth.module';
 import { EmailController } from './module/shared/Email/email.controller';
-import { UploadModule } from './module/shared/upload/upload.module';
+
 import { DesiredPositionModule } from './module/shared/desired-position/desired-position.module';
 import { GenderModule } from './module/shared/gender/gender.module';
 import { MaritalStatusModule } from './module/shared/marital-status/marital-status.module';
@@ -36,6 +36,8 @@ import { CompanyPackageModule } from './module/shared/company/company-package/co
 import { PackageModule } from './module/shared/company/package/package.module';
 import { ClientsModule } from './module/users/clients/clients.module';
 import { ServiceRequestModule } from './module/service-request/service-request.module';
+import { FileService } from './module/shared/upload/file.service';
+import { FileController } from './module/shared/upload/file.controller';
 
 @Module({
   imports: [
@@ -78,7 +80,7 @@ import { ServiceRequestModule } from './module/service-request/service-request.m
     UsersModule,
     AdminAuthModule,
     PrismaModule,
-    UploadModule,
+   
     DesiredPositionModule,
     GenderModule,
     MaritalStatusModule,
@@ -97,13 +99,14 @@ import { ServiceRequestModule } from './module/service-request/service-request.m
     PackageModule,
     ServiceRequestModule,
   ],
-  controllers: [AppController, EmailController],
+  controllers: [AppController, EmailController,FileController],
   providers: [
-    AppService,
+    AppService,FileService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
   ],
 })
+
 export class AppModule {}
