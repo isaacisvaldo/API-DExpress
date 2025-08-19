@@ -6,7 +6,7 @@ import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import { FrontendUrlService } from './module/shared/config/frontend-url/frontend-url.service';
 import { RateLimitExceptionFilter } from './common/filters/rate-limit-exception.filter';
-
+import * as express from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -54,6 +54,8 @@ async function bootstrap() {
     }),
   );
    app.useGlobalFilters(new RateLimitExceptionFilter());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   await app.listen(process.env.PORT ?? 3000);
 }
