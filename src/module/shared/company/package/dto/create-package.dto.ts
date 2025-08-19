@@ -54,5 +54,5 @@ export class CreatePackageDto {
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
-  details?: string[];
+  details: string[];
 }

@@ -8,9 +8,13 @@ export class FileController {
   constructor(private readonly fileService: FileService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', {
+    limits: {
+      fileSize: 50 * 1024 * 1024,
+    },
+  }))
   async upload(@UploadedFile() file: Express.Multer.File) {
-    // A mesma lógica de antes, mas o serviço lida com qualquer tipo de arquivo.
+  
     return this.fileService.uploadFile(file);
   }
 }
