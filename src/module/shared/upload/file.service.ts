@@ -25,6 +25,8 @@ export class FileService {
       });
 
     if (uploadError) {
+     // console.log(uploadError);
+      
       throw new Error('Falha no upload para o Supabase.');
     }
 
@@ -39,6 +41,8 @@ export class FileService {
       return { url: data.publicUrl };
 
     } catch (error) {
+     // console.log(error);
+      
       // Trata qualquer erro que possa ocorrer, como arquivo não encontrado
       throw new Error('Falha ao obter URL público.');
     }
