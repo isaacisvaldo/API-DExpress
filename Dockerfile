@@ -1,5 +1,5 @@
 # Dockerfile
-FROM node:18
+FROM node:20
 
 # Variável para definir o modo (default: development)
 ARG NODE_ENV=development

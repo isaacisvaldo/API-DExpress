@@ -7,6 +7,7 @@ import { FilterProfessionalDto } from './dto/filter-professional.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiOkResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { Professional } from '@prisma/client';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
+import { UpdateImageDto } from './dto/update-image.dto';
 
 @ApiTags('Professionals')
 @Controller('professionals')
@@ -64,6 +65,20 @@ export class ProfessionalController {
     const newIsAvailable = isAvailable === 'true'; 
     return this.professionalService.updateAvailability(id, newIsAvailable);
   }
+
+   @Patch(':id/image-url')
+  @ApiOperation({ summary: 'Atualiza a URL da imagem de perfil de um profissional' })
+  @ApiParam({ name: 'id', description: 'ID do profissional', type: String })
+  @ApiBody({ type: UpdateImageDto, description: 'Objeto contendo a nova URL da imagem.' })
+  @ApiResponse({ status: 200, description: 'URL da imagem de perfil atualizada com sucesso.' })
+  @ApiResponse({ status: 404, description: 'Profissional não encontrado.' })
+  async updateImageUrl(
+    @Param('id') id: string,
+    @Body() updateImageDto: UpdateImageDto,
+  ) {
+    return this.professionalService.updateImageUrl(id, updateImageDto.imageUrl);
+  }
+
   // --- FIM DA NOVA ROTA ADICIONADA ---
 
   @Delete(':id')

@@ -37,8 +37,6 @@ export class ServiceRequestController {
   @ApiOperation({ summary: 'Lista todas as solicitações de serviço com paginação e pesquisa.' })
   @ApiOkResponse({ type: PaginatedDto, description: 'Lista de solicitações paginada.' })
   findAll(@Query() query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequest>> {
-
-    console.log(query);
     
     return this.serviceRequestService.findAll(query);
   }

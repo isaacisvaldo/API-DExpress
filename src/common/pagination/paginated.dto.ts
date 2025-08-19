@@ -4,7 +4,6 @@ import { ApiProperty } from '@nestjs/swagger';
  * DTO genérico para a resposta de dados paginados.
  * Use a sintaxe de generics para tipar os dados: PaginatedDto<Course>
  */
-
 export class PaginatedDto<T> {
   @ApiProperty({ isArray: true })
   data: T[];

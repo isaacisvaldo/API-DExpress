@@ -2,6 +2,7 @@
 
 import {
   IsString,
+  IsOptional, // Importe este decorador
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -17,4 +18,19 @@ export class CreateProfessionalExperienceDto {
   @ApiProperty({ example: '3 anos', description: 'Duração da experiência.' })
   @IsString()
   tempo: string;
+
+  @ApiProperty({ example: 'Responsabilidades e conquistas na função.', description: 'Descrição da experiência.', required: false })
+  @IsOptional()
+  @IsString()
+  description?: string; // Adicione o '?' aqui
+
+  @ApiProperty({ example: 'YYYY-MM-DD', description: 'Data de início.', required: false })
+  @IsOptional()
+  @IsString()
+  startDate?: string; // Adicione o '?' aqui
+
+  @ApiProperty({ example: 'YYYY-MM-DD', description: 'Data de término.', required: false })
+  @IsOptional()
+  @IsString()
+  endDate?: string; // Adicione o '?' aqui
 }
