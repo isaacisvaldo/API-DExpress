@@ -44,8 +44,7 @@ export class ServiceRequestService {
       companyDistrictId,
       companySectorId,
       description,
-      startDate,
-      endDate,
+     serviceFrequency,
       planId,
       professionalId,
     } = createServiceRequestDto;
@@ -101,9 +100,8 @@ export class ServiceRequestService {
       requesterEmail,
       requesterPhoneNumber,
       description,
-      startDate: new Date(startDate), // Converte a string de data
-      endDate: new Date(endDate), // Converte a string de data
-      // Os campos de status, createdAt, etc., serão preenchidos pelo Prisma
+      serviceFrequency
+      
     };
 
     if (requesterType === UserType.INDIVIDUAL) {

@@ -1,13 +1,12 @@
 // src/service-request/dto/create-service-request.dto.ts
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserType } from '@prisma/client';
+import { UserType, ServiceFrequency } from '@prisma/client';
 import {
   IsString,
   IsEmail,
   IsOptional,
   IsNotEmpty,
   IsEnum,
-  IsDateString,
   ValidateIf,
 } from 'class-validator';
 
@@ -103,7 +102,7 @@ export class CreateServiceRequestDto {
 
   @ApiPropertyOptional({
     description: 'ID do Distrito da empresa (necessário se requesterType for EMPRESA)',
-    example: 'distrito-uuid-exemplo', // Assume que District é uma entidade separada com IDs
+    example: 'distrito-uuid-exemplo',
   })
   @ValidateIf((o) => o.requesterType === UserType.CORPORATE)
   @IsNotEmpty()
@@ -112,7 +111,7 @@ export class CreateServiceRequestDto {
 
   @ApiPropertyOptional({
     description: 'ID do Setor da empresa (necessário se requesterType for EMPRESA)',
-    example: 'setor-uuid-exemplo', // Assume que Sector é uma entidade separada com IDs
+    example: 'setor-uuid-exemplo',
   })
   @ValidateIf((o) => o.requesterType === UserType.CORPORATE)
   @IsNotEmpty()
@@ -129,33 +128,22 @@ export class CreateServiceRequestDto {
   description: string;
 
   @ApiProperty({
-    description: 'Data de início desejada do serviço/contrato (formato YYYY-MM-DD)',
-    example: '2025-10-01',
-    type: String, // Para Swagger reconhecer como string de data
-    format: 'date',
+    enum: ServiceFrequency,
+    description: 'Frequência do serviço: Mensal, Bimestral, Trimestral, Semestral, Anual ou Bienal.',
+    example: ServiceFrequency.QUARTERLY,
   })
-  @IsDateString()
+  @IsEnum(ServiceFrequency)
   @IsNotEmpty()
-  startDate: string;
-
-  @ApiProperty({
-    description: 'Data de fim desejada do serviço/contrato (formato YYYY-MM-DD)',
-    example: '2026-03-31',
-    type: String, // Para Swagger reconhecer como string de data
-    format: 'date',
-  })
-  @IsDateString()
-  @IsNotEmpty()
-  endDate: string;
-
-  // --- Campos para a Contratação (Mutuamente Exclusivos, baseados no tipo de requerente) ---
+  serviceFrequency: ServiceFrequency;
+  
+  // --- Campos para a Contratação ---
   @ApiPropertyOptional({
     description: 'ID do plano de serviço desejado (apenas se requesterType for EMPRESA)',
     example: 'plano-uuid-exemplo',
   })
   @ValidateIf((o) => o.requesterType === UserType.CORPORATE)
   @IsString()
-  @IsOptional() // Pode ser opcional mesmo para empresa se o fluxo for "escolher plano depois"
+  @IsOptional()
   planId?: string;
 
   @ApiPropertyOptional({
@@ -164,6 +152,6 @@ export class CreateServiceRequestDto {
   })
   @ValidateIf((o) => o.requesterType === UserType.INDIVIDUAL)
   @IsString()
-  @IsOptional() // Pode ser opcional mesmo para pessoa normal
+  @IsOptional()
   professionalId?: string;
 }
