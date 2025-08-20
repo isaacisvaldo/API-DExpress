@@ -622,7 +622,7 @@ model AdminUser {
   birthDate            DateTime
   email                String                 @unique
   password             String
-  avatar               String?
+  avatar               String          @default("user.png")
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   notificationSettings NotificationSettings[]

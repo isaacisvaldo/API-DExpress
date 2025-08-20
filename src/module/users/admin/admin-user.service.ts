@@ -234,6 +234,18 @@ export class AdminUserService {
     }
   }
 
+     async updateImageUrl(id: string, avatar: string): Promise<AdminUser> {
+      const professional = await this.prisma.adminUser.findUnique({ where: { id } });
+      if (!professional) {
+        throw new NotFoundException(`User com ID "${id}" não encontrado.`);
+      }
+  
+      return this.prisma.adminUser.update({
+        where: { id },
+        data: { avatar }, 
+      });
+    }
+
   /**
    * Envia um email de boas-vindas com credenciais temporárias para o administrador.
    * @param adminEmail O email do administrador.

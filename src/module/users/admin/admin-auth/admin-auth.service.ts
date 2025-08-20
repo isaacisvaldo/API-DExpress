@@ -34,6 +34,7 @@ export class AdminAuthService {
       email: admin.email,
       name: admin.name,
       role: admin.profile.label,
+      avatar:admin.avatar,
       permissions: permissionNames,
     };
     const accessToken = this.jwt.sign(payload, {
@@ -54,6 +55,7 @@ export class AdminAuthService {
         name: admin.name,
         email: admin.email,
         role: admin.profile.label,
+        avatar:admin.avatar,
         permissions: permissionNames,
       },
     };
@@ -86,6 +88,7 @@ export class AdminAuthService {
         sub: admin.id,
         email: admin.email,
         role: admin.profile.label,
+         avatar:admin.avatar,
         permissions: permissionNames,
       };
 

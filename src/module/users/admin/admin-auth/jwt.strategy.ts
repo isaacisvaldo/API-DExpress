@@ -24,6 +24,7 @@ super({
       email: payload.email,
       name:payload.name,
       role: payload.role,
+      avatar:payload.avatar,
       permissions: payload.permissions, 
     };
   }
