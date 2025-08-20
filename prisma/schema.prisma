@@ -362,6 +362,14 @@ model District {
   COMPLETED 
   REJECTED 
 }
+enum ServiceFrequency {
+  MONTHLY        // Mensal
+  BIMONTHLY      // Bimestral (a cada dois meses)
+  QUARTERLY      // Trimestral
+  SEMIANNUALLY   // Semestral
+  ANNUALLY       // Anual
+  BIENNIALLY     // Bienal (a cada dois anos)
+}
 model ServiceRequest {
   id                      String    @id @default(uuid())
   // Requester Information (Captured from a Single Form)
@@ -373,7 +381,7 @@ model ServiceRequest {
   individualRequesterName         String? // Nome da pessoa
   individualIdentityNumber        String? // Número de identificação
   individualAddress               String? // Morada da pessoa
-  individualUserId             String? // Id Do Utlizador
+  individualUserId                String? // Id Do Utlizador
   
   // Specific Data for a Company
   companyRequesterName    String? // Nome da empresa
@@ -384,8 +392,7 @@ model ServiceRequest {
   
   // Request Details
   description             String // Descrição da solicitação
-  startDate               DateTime // Data de início do serviço
-  endDate                 DateTime // Data de fim do serviço
+  serviceFrequency        ServiceFrequency @default(MONTHLY)
   createdAt               DateTime  @default(now())
   status                  StatusRequest @default(PENDING) // Estado da solicitação
   
