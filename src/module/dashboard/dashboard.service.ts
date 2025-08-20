@@ -1,44 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { format, parseISO, subDays } from 'date-fns';
+import { format, subDays } from 'date-fns';
+import { StatusRequest, ContractStatus } from '@prisma/client';
 @Injectable()
 export class DashboardService {
-   constructor(private readonly prisma: PrismaService) {}
-async getDashboardSummary() {
- const [
+  constructor(private readonly prisma: PrismaService) { }
+  async getDashboardSummary() {
+    const [
       totalProfessionals,
       clientsIndividual,
-      clientsEmpresa, 
-     // activeServices,
-     // canceledRequests,   
-   
+      clientsEmpresa,
+      activeServices,
+      canceledRequests,
     ] = await Promise.all([
       this.prisma.professional.count(),
-      this.prisma.clientProfile.count(), 
-      this.prisma.clientCompanyProfile.count(), 
-      /*
-      this.prisma.service.count({
+      this.prisma.clientProfile.count(),
+      this.prisma.clientCompanyProfile.count(),
+      this.prisma.contract.count({
         where: {
-          status: 'active', 
+          status: ContractStatus.ACTIVE,
         },
       }),
-      this.prisma.request.count({
+      this.prisma.serviceRequest.count({
         where: {
-          status: 'canceled', 
+          status: StatusRequest.REJECTED,
         },
       }),
-      */
-     
-    ]);
 
+    ]);
     // O total de clientes é a soma dos dois tipos de perfis
     const totalClients = clientsIndividual + clientsEmpresa;
 
-      const data = {
+    const data = {
       totalProfessionals,
       totalClients,
-      activeServices: 0,
-      canceledRequests: 0,
+      activeServices,
+      canceledRequests,
     };
     return data
   }
@@ -94,9 +91,9 @@ async getDashboardSummary() {
     let currentDate = new Date(startDate);
     const endDate = new Date();
     while (currentDate <= endDate) {
-        const dateKey = format(currentDate, 'yyyy-MM-dd');
-        dailyData[dateKey] = { profissionais: 0, clientes_fisica: 0, clientes_empresa: 0 };
-        currentDate.setDate(currentDate.getDate() + 1);
+      const dateKey = format(currentDate, 'yyyy-MM-dd');
+      dailyData[dateKey] = { profissionais: 0, clientes_fisica: 0, clientes_empresa: 0 };
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
     // Popular os dados
@@ -122,7 +119,7 @@ async getDashboardSummary() {
     });
 
     const formattedData = Object.keys(dailyData)
-      .sort() 
+      .sort()
       .map(date => ({
         date: date,
         profissionais: dailyData[date].profissionais,
@@ -135,11 +132,11 @@ async getDashboardSummary() {
       data: formattedData,
     };
   }
-    private parseRange(range: string): number {
+  private parseRange(range: string): number {
     if (range.endsWith('d')) {
       return parseInt(range.slice(0, -1), 10);
     }
-    return 30; 
+    return 30;
   }
   async getCompaniesBySector() {
     // 1. Busque todos os perfis de empresas, incluindo o setor relacionado.
@@ -155,14 +152,14 @@ async getDashboardSummary() {
 
     const sectorCount: { [key: string]: number } = {};
     companyProfiles.forEach(profile => {
-      const sectorLabel = profile.sector?.label; 
+      const sectorLabel = profile.sector?.label;
       if (sectorLabel) {
         sectorCount[sectorLabel] = (sectorCount[sectorLabel] || 0) + 1;
       }
     });
 
     const formattedData = Object.keys(sectorCount).map(sectorLabel => ({
-      sector: sectorLabel, 
+      sector: sectorLabel,
       companies: sectorCount[sectorLabel],
     }));
 
