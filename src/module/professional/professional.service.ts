@@ -7,6 +7,7 @@ import { Professional, Prisma } from '@prisma/client';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto'; 
 import * as dns from 'dns';
 import { testDomains } from 'src/util/test-domain';
+import { CreateProfessionalExperienceDto } from './dto/create-professional-experience.dto';
 
 @Injectable()
 export class ProfessionalService {
@@ -429,4 +430,85 @@ export class ProfessionalService {
       data: { profileImage }, 
     });
   }
+  async  addExperienceToProfessional(dto:CreateProfessionalExperienceDto,professionalId:string) {
+   const professional = await this.prisma.professional.findUnique({ where: { id:professionalId } });
+    if (!professional) {
+      throw new NotFoundException(`Profissional com ID "${professionalId}" não encontrado.`);
+    }
+    return await this.prisma.experience.create({
+      data: {
+        ...dto,
+        Professional: {
+          connect: { id: professionalId }
+        }
+      },
+      include: {
+        Professional: true
+      }
+    });
+  
+    
+ 
+}
+/**
+ * Remove a ligação de uma experiência a um profissional e, se a experiência não
+ * estiver mais ligada a ninguém, a remove completamente do banco de dados.
+ *
+ * @param professionalId O ID do profissional.
+ * @param experienceId O ID da experiência a ser removida.
+ * @returns O objeto da experiência que foi removida (ou desconectada).
+ * @throws NotFoundException Se a experiência ou o profissional não forem encontrados.
+ */
+async removeExperienceFromProfessional(professionalId: string, experienceId: string) {
+  // 1. Verifica se o profissional e a experiência existem para garantir que os IDs são válidos.
+  const professional = await this.prisma.professional.findUnique({
+    where: { id: professionalId }
+  });
+
+  const experience = await this.prisma.experience.findUnique({
+    where: { id: experienceId }
+  });
+
+  if (!professional) {
+    throw new NotFoundException(`Profissional com ID "${professionalId}" não encontrado.`);
+  }
+
+  if (!experience) {
+    throw new NotFoundException(`Experiência com ID "${experienceId}" não encontrada.`);
+  }
+
+  // 2. Desconecta a experiência do profissional. Isso remove a entrada na tabela de junção.
+  await this.prisma.professional.update({
+    where: { id: professionalId },
+    data: {
+      ProfessionalExperience: {
+        disconnect: { id: experienceId }
+      }
+    }
+  });
+
+  // 3. Conta quantos profissionais ainda têm essa experiência associada.
+  const experienceConnectionsCount = await this.prisma.professional.count({
+    where: {
+      ProfessionalExperience: {
+        some: {
+          id: experienceId
+        }
+      }
+    }
+  });
+
+  // 4. Se a contagem for zero, significa que a experiência não está ligada a mais ninguém.
+  //    Nesse caso, podemos deletar o registro da experiência.
+  if (experienceConnectionsCount === 0) {
+    return await this.prisma.experience.delete({
+      where: { id: experienceId }
+    });
+  }
+
+  // Se a experiência ainda tiver conexões, apenas retorne o objeto da experiência.
+  return experience;
+}
+
+
 }

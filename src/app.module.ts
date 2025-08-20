@@ -32,12 +32,12 @@ import { ProfilesModule } from './module/shared/roles/profiles.module';
 import { FrontendUrlModule } from './module/shared/config/frontend-url/frontend-url.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import { CompanyPackageModule } from './module/shared/company/company-package/company-package.module';
-import { PackageModule } from './module/shared/company/package/package.module';
+import { PackageModule } from './module/shared/package/package.module';
 import { ClientsModule } from './module/users/clients/clients.module';
 import { ServiceRequestModule } from './module/service-request/service-request.module';
 import { FileService } from './module/shared/upload/file.service';
 import { FileController } from './module/shared/upload/file.controller';
+import { ContractModule } from './module/contract/contract.module';
 
 @Module({
   imports: [
@@ -95,9 +95,10 @@ import { FileController } from './module/shared/upload/file.controller';
     PermissionsModule,
     ProfilesModule,
     FrontendUrlModule,
-    CompanyPackageModule,
+  
     PackageModule,
     ServiceRequestModule,
+    ContractModule,
   ],
   controllers: [AppController, EmailController,FileController],
   providers: [
