@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import slugify from 'slugify'; // Make sure to install: npm install slugify
+import slugify from 'slugify'; 
 
 @Injectable()
 export class FileService {
