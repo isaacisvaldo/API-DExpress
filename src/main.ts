@@ -22,12 +22,11 @@ async function bootstrap() {
   let allowedDomains: string[];
   const productionDomain = 'https://web-site-d-express.vercel.app';
 
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.COOKIES === 'production') {
     allowedDomains = [productionDomain];
   } else {
     allowedDomains = ['http://localhost:4200', 'http://localhost:5173'];
   }
-
   // Tenta adicionar domínios do banco de dados, mas não depende disso para funcionar
   try {
     const domainsFromDB = await uerls.getAllDomains();
