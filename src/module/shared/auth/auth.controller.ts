@@ -33,14 +33,14 @@ export class AuthController {
     res.cookie('access_token', accessToken, {
       httpOnly: true,
       secure: isProduction, 
-      sameSite: isProduction ? 'none' : 'lax', 
+      sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict', 
      maxAge: 5 * 60 * 60 * 1000,
     });
 
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
     });
 
@@ -64,7 +64,7 @@ export class AuthController {
     res.cookie('access_token', accessToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict',
       maxAge: 60 * 60 * 1000, // 1 hora
     });
 
@@ -76,12 +76,12 @@ export class AuthController {
     res.clearCookie('access_token', {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict',
     });
     res.clearCookie('refresh_token', {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict',
     });
     return { message: 'Logout realizado com sucesso' };
   }
