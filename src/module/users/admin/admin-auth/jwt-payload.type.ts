@@ -25,6 +25,10 @@ export interface JwtPayload {
    * O papel (role) do usuário no sistema.
    */
   role: string;
+    /**
+   * O papel (avatar) do usuário no sistema.
+   */
+  avatar: string;
 
   /**
    * Um array com as permissões do usuário, usando o enum PermissionType.

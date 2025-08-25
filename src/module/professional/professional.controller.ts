@@ -8,11 +8,12 @@ import { ApiTags, ApiOperation, ApiResponse, ApiOkResponse, ApiBody, ApiParam } 
 import { Professional } from '@prisma/client';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { UpdateImageDto } from './dto/update-image.dto';
+import { CreateProfessionalExperienceDto } from './dto/create-professional-experience.dto';
 
 @ApiTags('Professionals')
 @Controller('professionals')
 export class ProfessionalController {
-  constructor(private readonly professionalService: ProfessionalService) {}
+  constructor(private readonly professionalService: ProfessionalService) { }
 
   @Post()
   @ApiOperation({ summary: 'Cria um novo profissional' })
@@ -28,7 +29,7 @@ export class ProfessionalController {
   findAll(@Query() filter: FilterProfessionalDto): Promise<PaginatedDto<Professional>> {
     return this.professionalService.findAll(filter);
   }
-    @Get("public-professionals")
+  @Get("public-professionals")
   @ApiOperation({ summary: 'Lista todos os profissionais com paginação e filtros (PARA O PORTAL)' })
   @ApiOkResponse({ type: PaginatedDto, description: 'Lista de profissionais paginada e filtrada.' })
   getPublicProfessionals(@Query() filter: FilterProfessionalDto): Promise<PaginatedDto<Professional>> {
@@ -57,16 +58,16 @@ export class ProfessionalController {
   @ApiParam({ name: 'isAvailable', description: 'Novo estado de disponibilidade', type: Boolean })
   @ApiOkResponse({ description: 'Disponibilidade do profissional atualizada com sucesso.' })
   updateAvailability(
-    @Param('id') id: string, 
+    @Param('id') id: string,
     @Param('isAvailable') isAvailable: string
   ) {
     // Note que o valor do parâmetro da URL é uma string ('true' ou 'false')
     // e precisa ser convertido para um booleano.
-    const newIsAvailable = isAvailable === 'true'; 
+    const newIsAvailable = isAvailable === 'true';
     return this.professionalService.updateAvailability(id, newIsAvailable);
   }
 
-   @Patch(':id/image-url')
+  @Patch(':id/image-url')
   @ApiOperation({ summary: 'Atualiza a URL da imagem de perfil de um profissional' })
   @ApiParam({ name: 'id', description: 'ID do profissional', type: String })
   @ApiBody({ type: UpdateImageDto, description: 'Objeto contendo a nova URL da imagem.' })
@@ -87,4 +88,32 @@ export class ProfessionalController {
   remove(@Param('id') id: string) {
     return this.professionalService.remove(id);
   }
+  @Post(':id/experiences')
+  @ApiOperation({ summary: 'Adiciona uma nova experiência profissional a um profissional' })
+  @ApiParam({ name: 'id', description: 'ID do profissional', type: String })
+  @ApiBody({ type: CreateProfessionalExperienceDto })
+  @ApiResponse({ status: 201, description: 'Experiência profissional adicionada com sucesso.' })
+  @ApiResponse({ status: 404, description: 'Profissional não encontrado.' })
+  async addExperience(
+    @Param('id') id: string,
+    @Body() createExperienceDto: CreateProfessionalExperienceDto,
+  ) {
+    return this.professionalService.addExperienceToProfessional(createExperienceDto, id);
+  }
+
+    // ROTA DE REMOÇÃO DE EXPERIÊNCIA ADICIONADA AQUI
+  @Delete(':professionalId/experiences/:experienceId')
+  @ApiOperation({ summary: 'Remove uma experiência de um profissional' })
+  @ApiParam({ name: 'professionalId', description: 'ID do profissional', type: String })
+  @ApiParam({ name: 'experienceId', description: 'ID da experiência a ser removida', type: String })
+  @ApiResponse({ status: 200, description: 'Experiência removida do profissional com sucesso.' })
+  @ApiResponse({ status: 404, description: 'Profissional ou experiência não encontrado.' })
+  async removeExperience(
+    @Param('professionalId') professionalId: string,
+    @Param('experienceId') experienceId: string,
+  ) {
+    // Chama o método do serviço para remover a experiência.
+    return this.professionalService.removeExperienceFromProfessional(professionalId, experienceId);
+  }
+
 }

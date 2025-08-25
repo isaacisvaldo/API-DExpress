@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-
+import slugify from 'slugify'; 
 
 @Injectable()
 export class FileService {
@@ -15,8 +15,15 @@ export class FileService {
 
   async uploadFile(file: Express.Multer.File) {
     const bucketName = 'files'; 
-    const fileName = `${Date.now()}-${file.originalname}`;
 
+    // Sanitize the original file name to remove invalid characters
+    const sanitizedFileName = slugify(file.originalname, {
+      lower: true,
+      strict: true,
+    });
+    
+    // Create the final unique filename using the sanitized name
+    const fileName = `${Date.now()}-${sanitizedFileName}`;
   
     const { data: uploadData, error: uploadError } = await this.supabase.storage
       .from(bucketName)
@@ -25,25 +32,19 @@ export class FileService {
       });
 
     if (uploadError) {
-     // console.log(uploadError);
-      
+      console.log(uploadError);
       throw new Error('Falha no upload para o Supabase.');
     }
 
-
     try {
-
       const { data } = this.supabase.storage
         .from(bucketName)
         .getPublicUrl(fileName);
-
      
       return { url: data.publicUrl };
 
     } catch (error) {
-     // console.log(error);
-      
-      // Trata qualquer erro que possa ocorrer, como arquivo não encontrado
+      console.log(error);
       throw new Error('Falha ao obter URL público.');
     }
   }

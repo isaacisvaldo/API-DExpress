@@ -10,6 +10,7 @@ import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { CreateAdminUserDto } from './dto/create-admin-user.dto.ts';
 import { UpdateAdminUserDto } from './dto/update-admin.dto';
 import { RequiredPermissions } from 'src/common';
+import { UpdateImageDto } from 'src/module/professional/dto/update-image.dto';
 
 @ApiTags('Admin')
 @Controller('admin')
@@ -70,7 +71,17 @@ export class AdminUserController {
     return this.service.update(id, updateAdminUserDto);
   }
 
-  @Delete('users/:id')
+  @Patch('users/:id/profile-image')
+  @UseGuards(PermissionsGuard)
+ 
+  @ApiOperation({ summary: 'Deleta um utilizador administrador' })
+  @ApiOkResponse({ description: 'Utilizador deletado com sucesso' })
+  @ApiResponse({ status: 404, description: 'Utilizador não encontrado' })
+  async updateAdminImageUrl(  @Param('id') id: string,
+      @Body() updateImageDto: UpdateImageDto) {
+    return this.service.updateImageUrl(id,updateImageDto.imageUrl);
+  }
+    @Delete('users/:id')
   @UseGuards(PermissionsGuard)
   @RequiredPermissions(PermissionType.UsersDelete)
   @ApiOperation({ summary: 'Deleta um utilizador administrador' })
@@ -79,4 +90,6 @@ export class AdminUserController {
   async remove(@Param('id') id: string) {
     return this.service.remove(id);
   }
+
+   
 }
