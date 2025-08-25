@@ -272,6 +272,7 @@ if (!existingAdmin) {
       genderId: genderMap['MALE'],
       birthDate: new Date('1990-01-01'),
       email: defaultEmail,
+      avatar:"user.png",
       password: hashedPassword,
       isRoot:true,
       profileId: generalAdminProfile.id, 
