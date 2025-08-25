@@ -13,6 +13,9 @@ import { Response, Request } from 'express';
 
 const isProduction = process.env.COOKIES === 'production';
 
+console.log("SECURE::::PROD",isProduction)
+console.log(isProduction ? 'none' : 'lax')
+
 @ApiTags('Autenticação')
 @Controller('auth')
 export class AuthController {
