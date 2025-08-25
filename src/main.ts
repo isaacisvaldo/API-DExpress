@@ -7,6 +7,7 @@ import * as cookieParser from 'cookie-parser';
 import { FrontendUrlService } from './module/shared/config/frontend-url/frontend-url.service';
 import { RateLimitExceptionFilter } from './common/filters/rate-limit-exception.filter';
 import * as express from 'express';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -17,13 +18,26 @@ async function bootstrap() {
   // Middleware para cookies
   app.use(cookieParser());
 
-  let allowedDomains: string[] = [];
-  try {
-    const allowedDomainsFromDB = await uerls.getAllDomains();
-    allowedDomains = allowedDomainsFromDB.filter(Boolean); 
-  } catch (err) {
-    console.error('Erro ao carregar domínios do banco de dados para CORS:', err);
+  // Define os domínios permitidos com base no ambiente
+  let allowedDomains: string[];
+  const productionDomain = 'https://web-site-d-express.vercel.app';
+
+  if (process.env.NODE_ENV === 'production') {
+    allowedDomains = [productionDomain];
+  } else {
     allowedDomains = ['http://localhost:4200', 'http://localhost:5173'];
+  }
+
+  // Tenta adicionar domínios do banco de dados, mas não depende disso para funcionar
+  try {
+    const domainsFromDB = await uerls.getAllDomains();
+    if (domainsFromDB && domainsFromDB.length > 0) {
+      // Adiciona os domínios do banco de dados, mas garante que os domínios padrão
+      // para o ambiente atual não sejam perdidos
+      allowedDomains = [...new Set([...allowedDomains, ...domainsFromDB])];
+    }
+  } catch (err) {
+    console.error('Atenção: Erro ao carregar domínios do banco de dados para CORS. Usando a lista de domínios padrão.', err);
   }
 
   console.log('Domínios CORS permitidos:', allowedDomains);
@@ -31,7 +45,6 @@ async function bootstrap() {
   app.enableCors({
     origin: allowedDomains, 
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    
     credentials: true,
   });
 
@@ -53,7 +66,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
-   app.useGlobalFilters(new RateLimitExceptionFilter());
+  app.useGlobalFilters(new RateLimitExceptionFilter());
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
