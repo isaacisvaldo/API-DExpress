@@ -5,11 +5,14 @@ import {
   Res,
   Req,
   UnauthorizedException,
+  UseGuards,
+  Get,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
 import { Response, Request } from 'express';
+import { JwtAuthGuard } from 'src/common';
 
 const isProduction = process.env.COOKIES === 'production';
 
@@ -47,7 +50,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
     });
 
-    return { user: userData };
+    return { user: userData,accessToken, refreshToken };
   }
 
   @Post('refresh')
@@ -91,4 +94,10 @@ export class AuthController {
     });
     return { message: 'Logout realizado com sucesso' };
   }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('validate')
+    async validate(@Req() req: any) {
+      return { valid: true, user: req.user };
+    }
 }
