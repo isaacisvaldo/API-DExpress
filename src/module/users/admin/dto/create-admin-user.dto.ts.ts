@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, IsUUID, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsValidEmail } from 'src/common/validators/is-valid-email';
 
 export class CreateAdminUserDto {
   @ApiProperty({ example: 'João Silva', description: 'Nome completo do administrador' })
@@ -28,6 +29,7 @@ export class CreateAdminUserDto {
 
   @ApiProperty({ example: 'admin@dexpress.com', description: 'Email único do administrador' })
   @IsEmail()
+  @IsValidEmail()
   email: string;
 
   @ApiPropertyOptional({ example: 'senhaForte123', description: 'Senha (opcional, gerada se não enviada)' })

@@ -6,7 +6,7 @@ import { FilterProfessionalDto } from './dto/filter-professional.dto';
 import { Professional, Prisma } from '@prisma/client';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto'; 
 import * as dns from 'dns';
-import { testDomains } from 'src/util/test-domain';
+import { testDomains } from 'src/common/test-domain';
 import { CreateProfessionalExperienceDto } from './dto/create-professional-experience.dto';
 
 @Injectable()

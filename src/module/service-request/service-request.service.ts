@@ -6,18 +6,18 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
-import { UpdateServiceRequestDto } from './dto/update-service-request.dto'; // Precisará criar este DTO
-import { FindAllDto } from 'src/common/pagination/find-all.dto';
+import { UpdateServiceRequestDto } from './dto/update-service-request.dto'; 
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { ServiceRequest, Prisma, UserType } from '@prisma/client';
 import { MailerService } from '@nestjs-modules/mailer';
-import { testDomains } from 'src/util/test-domain';
-import * as dns from 'dns';
+
 import { FilterServiceRequestsDto } from './dto/filter-service-requests.dto';
+
 @Injectable()
 export class ServiceRequestService {
   constructor(
     private readonly prisma: PrismaService,
+
     private readonly mailerService: MailerService,
   ) { }
 
@@ -49,51 +49,7 @@ export class ServiceRequestService {
       professionalId,
     } = createServiceRequestDto;
 
-    // 1. Verificação básica de e-mail
-    if (!requesterEmail) {
-      throw new BadRequestException('O e-mail do solicitante é obrigatório.');
-    }
-    const domain = requesterEmail.split('@')[1];
-
-    // 1. Verificação se o e-mail é de teste (nova verificação)
-    if (testDomains.includes(domain)) {
-      throw new BadRequestException('E-mails de teste não são permitidos.');
-    }
-
-
-
-    // 1. Validação do formato do e-mail
-    const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requesterEmail);
-    if (!isValidFormat) {
-      throw new BadRequestException('Formato de e-mail inválido.');
-    }
-
-    // 2. Verificação do domínio (registros MX)
-
-    try {
-      const mxRecords = await new Promise<dns.MxRecord[]>((resolve, reject) => {
-        dns.resolveMx(domain, (err, addresses) => {
-          if (err) {
-            // Se houver erro, rejeita a Promise
-            return reject(err);
-          }
-          // Se der certo, resolve a Promise com o array de registros
-          resolve(addresses);
-        });
-      });
-
-      // Agora mxRecords é garantido ser um array,
-      // então a verificação do length funciona
-      if (mxRecords.length === 0) {
-        throw new BadRequestException('O domínio do e-mail não é válido.');
-      }
-    } catch (error) {
-      // Este bloco de catch vai capturar erros como ENODATA, ENOTFOUND, etc.
-      // que significam que o domínio não tem registros MX ou não existe.
-      throw new BadRequestException('O domínio do e-mail não é válido.');
-    }
-
-
+ 
     // 2. Prepara os dados de acordo com o tipo de requerente
     const requestData: Prisma.ServiceRequestCreateInput = {
       requesterType,
@@ -141,9 +97,9 @@ export class ServiceRequestService {
           id: planId
         }
       })
-      if (!District) throw new ForbiddenException("Distrito Não encontrado")
-      if (!Sector) throw new ForbiddenException("Sector Não encontrado")
-      if (!plan) throw new ForbiddenException("Plano Não Identificado")
+      if (!District) throw new NotFoundException("Distrito Não encontrado")
+      if (!Sector) throw new NotFoundException("Sector Não encontrado")
+      if (!plan) throw new NotFoundException("Plano Não Identificado")
       Object.assign(requestData, {
         companyRequesterName,
         companyNif,
