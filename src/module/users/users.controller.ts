@@ -85,19 +85,7 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
   }
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  async validate(@Req() req: any) {
-    const userId = req.user.sub || req.user.id;
-    if (!userId) {
-      throw new ForbiddenException('Utilizador sem permissão');
-    }
-    const  user = this.userService.findOne(userId);
-    if (!user) {
-      throw new ForbiddenException('Utilizador sem permissão');
-    }
-    return user;
-  }
+
 
 }
 
