@@ -10,6 +10,7 @@ import {
   Req,
   UseGuards,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 
 import { CreateUserDto } from './dto/create-user.dto';
@@ -84,15 +85,18 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
   }
-
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async validate(@Req() req: any) {
     const userId = req.user.sub || req.user.id;
     if (!userId) {
-      throw new UnauthorizedException('Utilizador não autenticado');
+      throw new ForbiddenException('Utilizador sem permissão');
     }
-    return this.userService.findOne(userId);
+    const  user = this.userService.findOne(userId);
+    if (!user) {
+      throw new ForbiddenException('Utilizador sem permissão');
+    }
+    return user;
   }
 
 }
