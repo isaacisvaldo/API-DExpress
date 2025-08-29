@@ -33,6 +33,10 @@ export class ClientProfileController {
   findAll(@Query() query: FindAllDto): Promise<PaginatedDto<ClientProfileModel>> {
     return this.profileService.findAll(query);
   }
+    @Get('all')
+  findAllWithoutPagination(@Query('search') search?: string): Promise<ClientProfileModel[]> {
+    return this.profileService.findAllWithoutPagination(search);
+  }
 
   @Post()
   @ApiOperation({
