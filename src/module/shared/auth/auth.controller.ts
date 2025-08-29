@@ -99,7 +99,7 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @Get('validate')
     async validate(@Req() req: any) {
-      const user = this.authService.me(req.user.sub || req.user.id);
+      const user = await this.authService.me(req.user.id);
       if (!user) {
         throw new ForbiddenException('Utilizador sem permissão');
       }
