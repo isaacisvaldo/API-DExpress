@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
   UseGuards,
   Get,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags } from '@nestjs/swagger';
@@ -98,6 +99,10 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @Get('validate')
     async validate(@Req() req: any) {
-      return { valid: true, user: req.user };
+      const user = this.authService.me(req.user.sub || req.user.id);
+      if (!user) {
+        throw new ForbiddenException('Utilizador sem permissão');
+      }
+      return { valid: true, user };
     }
 }
