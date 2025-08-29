@@ -127,9 +127,7 @@ async findAll(query: FindAllDto): Promise<PaginatedDto<User>> {
      
       },
     });
-    if (!user) {
-      throw new NotFoundException(`Usuário com ID "${id}" não encontrado.`);
-    }
+   
     return user;
   }
 
