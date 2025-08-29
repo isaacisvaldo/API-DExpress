@@ -8,6 +8,8 @@ import {
   Delete,
   Query,
   Req,
+  UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import { CreateUserDto } from './dto/create-user.dto';
@@ -18,6 +20,7 @@ import { FindAllDto } from 'src/common/pagination/find-all.dto';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { UserService } from './users.service';
 import { User } from '@prisma/client';
+import { JwtAuthGuard } from 'src/common';
 
 @ApiTags('Users')
 @Controller('users')
@@ -42,10 +45,10 @@ export class UserController {
   findAll(@Query() query: FindAllDto): Promise<PaginatedDto<User>> {
     return this.userService.findAll(query);
   }
-   @Get('without-profile')
+  @Get('without-profile')
   @ApiOperation({ summary: 'Lista todos os usuários que não têm nenhum perfil associado, com paginação e pesquisa.' })
   @ApiOkResponse({ type: PaginatedDto, description: 'Lista de usuários sem perfil paginada.' })
-  findWithoutProfile(@Query() query: FindAllDto): Promise<PaginatedDto<User>> { 
+  findWithoutProfile(@Query() query: FindAllDto): Promise<PaginatedDto<User>> {
     return this.userService.findUsersWithoutProfile(query);
   }
 
@@ -80,6 +83,16 @@ export class UserController {
   @ApiResponse({ status: 404, description: 'Usuário não encontrado.' })
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async validate(@Req() req: any) {
+    const userId = req.user.sub || req.user.id;
+    if (!userId) {
+      throw new UnauthorizedException('Utilizador não autenticado');
+    }
+    return this.userService.findOne(userId);
   }
 
 }

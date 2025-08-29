@@ -3,7 +3,7 @@ import { CreateJobApplicationDto } from './dto/create-job-application.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { UpdateJobApplicationStatusDto } from './dto/update-status.dto';
 import { FilterJobApplicationDto } from './dto/filter-job-application.dto';
-import { testDomains } from 'src/util/test-domain';
+import { testDomains } from 'src/common/test-domain';
 import * as dns from 'dns';
 
 @Injectable()

@@ -13,7 +13,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import * as dns from 'dns';
-import { testDomains } from 'src/util/test-domain';
+import { testDomains } from 'src/common/test-domain';
 
 
 @Injectable()
@@ -33,45 +33,7 @@ export class UserService {
 
 async create(createUserDto: CreateUserDto, originDomain: string) {
   const { email, firstName, lastName, type } = createUserDto;
-  const domain = email.split('@')[1];
 
-  // 1. Verificação se o e-mail é de teste (nova verificação)
-  if (testDomains.includes(domain)) {
-    throw new BadRequestException('E-mails de teste não são permitidos.');
-  }
-
-
-
-  // 1. Validação do formato do e-mail
-  const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if (!isValidFormat) {
-    throw new BadRequestException('Formato de e-mail inválido.');
-  }
-
-  // 2. Verificação do domínio (registros MX)
-
-  try {
-    const mxRecords = await new Promise<dns.MxRecord[]>((resolve, reject) => {
-      dns.resolveMx(domain, (err, addresses) => {
-        if (err) {
-          // Se houver erro, rejeita a Promise
-          return reject(err);
-        }
-        // Se der certo, resolve a Promise com o array de registros
-        resolve(addresses);
-      });
-    });
-
-    // Agora mxRecords é garantido ser um array,
-    // então a verificação do length funciona
-    if (mxRecords.length === 0) {
-      throw new BadRequestException('O domínio do e-mail não é válido.');
-    }
-  } catch (error) {
-    // Este bloco de catch vai capturar erros como ENODATA, ENOTFOUND, etc.
-    // que significam que o domínio não tem registros MX ou não existe.
-    throw new BadRequestException('O domínio do e-mail não é válido.');
-  }
   
   // 3. Verificação de usuário existente
   const existingUser = await this.findByEmail(email);

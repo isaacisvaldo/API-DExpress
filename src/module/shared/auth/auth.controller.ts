@@ -47,7 +47,7 @@ export class AuthController {
        secure: isProduction ? true : false,
       partitioned:isProduction ? true : false,
       sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+      maxAge: 7 * 24 * 60 * 60 * 1000, 
     });
 
     return { user: userData,accessToken, refreshToken };
@@ -75,7 +75,7 @@ export class AuthController {
       maxAge: 60 * 60 * 1000, // 1 hora
     });
 
-    return { success: true };
+    return { success: true,accessToken};
   }
 
   @Post('logout')

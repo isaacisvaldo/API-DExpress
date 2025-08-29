@@ -53,6 +53,33 @@ export class ClientProfileService {
       totalPages,
     };
   }
+  
+  /**
+   * Lista todos os perfis de cliente sem paginação, com pesquisa opcional.
+   */
+  async findAllWithoutPagination(search?: string): Promise<ClientProfile[]> {
+    const where: Prisma.ClientProfileWhereInput = search
+      ? {
+          OR: [
+            { fullName: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+          ],
+        }
+      : {};
+
+    const profiles = await this.prisma.clientProfile.findMany({
+      where,
+      include: {
+        user: true,
+      },
+      orderBy: {
+        fullName: 'asc', // Ordena por nome completo para melhor visualização
+      },
+    });
+
+    return profiles;
+  }
+
 
   async create(
     userId: string,
