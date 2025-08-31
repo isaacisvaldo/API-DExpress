@@ -21,8 +21,8 @@ export class UserService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailerService: MailerService,
-  ) {}
-  
+  ) { }
+
   /**
    * Cria um novo usuário no sistema, gerando uma senha temporária e enviando por e-mail.
    * Não associa um perfil na criação.
@@ -31,112 +31,127 @@ export class UserService {
    * @throws BadRequestException se o e-mail já estiver cadastrado.
    */
 
-async create(createUserDto: CreateUserDto, originDomain: string) {
-  const { email, firstName, lastName, type } = createUserDto;
+  async create(createUserDto: CreateUserDto, originDomain: string) {
+    const { email, firstName, lastName, type } = createUserDto;
 
-  
-  // 3. Verificação de usuário existente
-  const existingUser = await this.findByEmail(email);
-  if (existingUser) {
-    throw new BadRequestException('E-mail já cadastrado.');
+
+    // 3. Verificação de usuário existente
+    const existingUser = await this.findByEmail(email);
+    if (existingUser) {
+      throw new BadRequestException('E-mail já cadastrado.');
+    }
+
+    // Restante da sua lógica
+    const tempPassword = randomBytes(4).toString('hex');
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    const user = await this.prisma.user.create({
+      data: {
+        firstName,
+        lastName,
+        email,
+        password: hashedPassword,
+        type,
+      },
+    });
+
+    await this.sendWelcomeEmail(email, tempPassword, originDomain);
+
+    return {
+      message: 'Usuário criado com sucesso. Senha temporária enviada por e-mail.',
+      userId: user.id,
+      email: user.email,
+    };
   }
 
-  // Restante da sua lógica
-  const tempPassword = randomBytes(4).toString('hex');
-  const hashedPassword = await bcrypt.hash(tempPassword, 10);
-
-  const user = await this.prisma.user.create({
-    data: {
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-      type,
-    },
-  });
-
-  await this.sendWelcomeEmail(email, tempPassword, originDomain);
-
-  return {
-    message: 'Usuário criado com sucesso. Senha temporária enviada por e-mail.',
-    userId: user.id,
-    email: user.email,
-  };
-}
 
 
+  async findAll(query: FindAllDto): Promise<PaginatedDto<User>> {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const skip = (page - 1) * limit;
 
-async findAll(query: FindAllDto): Promise<PaginatedDto<User>> {
-  const page = query.page || 1;
-  const limit = query.limit || 10;
-  const skip = (page - 1) * limit;
-
-  const searchWhere: Prisma.UserWhereInput = query.search
-    ? {
+    const searchWhere: Prisma.UserWhereInput = query.search
+      ? {
         OR: [
           { firstName: { contains: query.search, mode: 'insensitive' } },
           { lastName: { contains: query.search, mode: 'insensitive' } },
           { email: { contains: query.search, mode: 'insensitive' } },
         ],
       }
-    : {};
+      : {};
 
-  
 
- const where: Prisma.UserWhereInput = {
-    AND: [
-      {
-        clientProfile: {
-          some: { 
-            id: { not: undefined }, 
+
+    const where: Prisma.UserWhereInput = {
+      AND: [
+        {
+          clientProfile: {
+            some: {
+              id: { not: undefined },
+            },
           },
         },
-      },
-      searchWhere,
-    ],
-  };
+        searchWhere,
+      ],
+    };
 
-  const [users, total] = await this.prisma.$transaction([
-    this.prisma.user.findMany({
-      skip,
-      take: limit,
-      where,
-      include: {
-        clientProfile: true, 
-      },
-    }),
-    this.prisma.user.count({ where }),
-  ]);
+    const [users, total] = await this.prisma.$transaction([
+      this.prisma.user.findMany({
+        skip,
+        take: limit,
+        where,
+        include: {
+          clientProfile: true,
+        },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
 
-  const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / limit);
 
-  return {
-    data: users,
-    total,
-    page,
-    limit,
-    totalPages,
-  };
-}
+    return {
+      data: users,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+  }
 
   async findOne(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        type: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
         clientProfile: true,
-     
       },
+
     });
-   
+
     return user;
   }
 
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },
-      include: {
+     select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        type: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
         clientProfile: true,
-     
       },
     });
   }
@@ -186,16 +201,16 @@ async findAll(query: FindAllDto): Promise<PaginatedDto<User>> {
       throw error;
     }
   }
-   /**
-   * Busca todos os usuários que não possuem perfil de cliente ou perfil de empresa associado.
-   * @returns Uma lista de usuários sem perfil.
-   */
- /**
-   * Busca todos os usuários que não possuem perfil de cliente ou perfil de empresa associado,
-   * com suporte a paginação e pesquisa.
-   * @param query O DTO com os parâmetros de consulta para paginação e pesquisa.
-   * @returns Um objeto com a lista de usuários sem perfil, a contagem total, a página atual e o limite.
-   */
+  /**
+  * Busca todos os usuários que não possuem perfil de cliente ou perfil de empresa associado.
+  * @returns Uma lista de usuários sem perfil.
+  */
+  /**
+    * Busca todos os usuários que não possuem perfil de cliente ou perfil de empresa associado,
+    * com suporte a paginação e pesquisa.
+    * @param query O DTO com os parâmetros de consulta para paginação e pesquisa.
+    * @returns Um objeto com a lista de usuários sem perfil, a contagem total, a página atual e o limite.
+    */
   async findUsersWithoutProfile(query: FindAllDto): Promise<PaginatedDto<User>> {
     const page = query.page || 1;
     const limit = query.limit || 10;
@@ -203,12 +218,12 @@ async findAll(query: FindAllDto): Promise<PaginatedDto<User>> {
 
     const searchWhere: Prisma.UserWhereInput = query.search
       ? {
-          OR: [
-            { firstName: { contains: query.search, mode: 'insensitive' } },
-            { lastName: { contains: query.search, mode: 'insensitive' } },
-            { email: { contains: query.search, mode: 'insensitive' } },
-          ],
-        }
+        OR: [
+          { firstName: { contains: query.search, mode: 'insensitive' } },
+          { lastName: { contains: query.search, mode: 'insensitive' } },
+          { email: { contains: query.search, mode: 'insensitive' } },
+        ],
+      }
       : {};
 
     const where: Prisma.UserWhereInput = {
@@ -218,7 +233,7 @@ async findAll(query: FindAllDto): Promise<PaginatedDto<User>> {
             none: {}, // Não tem perfil de cliente
           },
         },
-       
+
         searchWhere, // Aplica os filtros de pesquisa
       ],
     };
@@ -230,7 +245,7 @@ async findAll(query: FindAllDto): Promise<PaginatedDto<User>> {
         where,
         include: {
           clientProfile: true,
-       
+
         },
       }),
       this.prisma.user.count({ where }),
@@ -247,7 +262,7 @@ async findAll(query: FindAllDto): Promise<PaginatedDto<User>> {
     };
   }
 
-  private async sendWelcomeEmail(email: string, tempPassword: string,originDomain:string) {
+  private async sendWelcomeEmail(email: string, tempPassword: string, originDomain: string) {
 
     const portalUrl = originDomain
 
