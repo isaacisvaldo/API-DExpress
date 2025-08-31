@@ -52,6 +52,20 @@ export class UserController {
   findWithoutProfile(@Query() query: FindAllDto): Promise<PaginatedDto<User>> {
     return this.userService.findUsersWithoutProfile(query);
   }
+  @Get('curent')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Obtém os detalhes do usuário autenticado.' })
+  @ApiOkResponse({ description: 'Detalhes do usuário autenticado.' })
+  getCurrentUser(@Req() req: any) {
+    const user = req.user;
+    if (!user) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+    if (!user.isActive) {
+      throw new ForbiddenException('Usuário inativo');
+    }
+    return this.userService.findOne(user.id);
+  }
 
   @Get(':id')
   @ApiOperation({ summary: 'Busca um usuário pelo ID' })
