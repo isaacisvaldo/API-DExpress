@@ -17,8 +17,7 @@ import { JwtAuthGuard } from 'src/common';
 
 const isProduction = process.env.COOKIES === 'production';
 
-console.log("SECURE::::PROD",isProduction)
-console.log(isProduction ? 'none' : 'lax')
+
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -42,7 +41,6 @@ export class AuthController {
       sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict', 
      maxAge: 5 * 60 * 60 * 1000,
     });
-
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
        secure: isProduction ? true : false,
@@ -50,7 +48,6 @@ export class AuthController {
       sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, 
     });
-
     return { user: userData,accessToken, refreshToken };
   }
 
@@ -73,7 +70,7 @@ export class AuthController {
        secure: isProduction ? true : false,
       partitioned:isProduction ? true : false,
       sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict',
-      maxAge: 60 * 60 * 1000, // 1 hora
+      maxAge: 60 * 60 * 1000, 
     });
 
     return { success: true,accessToken};
@@ -99,10 +96,6 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @Get('validate')
     async validate(@Req() req: any) {
-      const user = await this.authService.me(req.user.id);
-      if (!user) {
-        throw new ForbiddenException('Utilizador sem permissão');
-      }
-      return { valid: true, user };
+      return { valid: true, user: req.user };
     }
 }

@@ -70,15 +70,5 @@ export class AuthService {
   }
 
 
-  async me (id: string) {
-    return await this.prisma.user.findUnique({
-      where: { id },
-      include: {
-        clientProfile: true,
-     
-      },
-    });
-   
-   
-  }
+
 }

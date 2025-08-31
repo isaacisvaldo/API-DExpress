@@ -629,7 +629,7 @@ model AdminUser {
   securitySettings     SecuritySettings[]
   genderId             String?
   profile              Profile                @relation(fields: [profileId], references: [id])
-  profileId            String // A restrição '@unique' foi removida
+  profileId            String 
   address              String                 @default("---")
   isRoot               Boolean                @default(false)
 }
