@@ -58,7 +58,13 @@ export class UserController {
   @ApiOkResponse({ description: 'Detalhes do usuário autenticado.' })
   getCurrentUser(@Req() req: any) {
     const user = req.user;
+    console.log('user', user);
+    
     if (!user) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+    const Id = user.sub || user.id;
+    if (!Id) {
       throw new UnauthorizedException('Usuário não autenticado');
     }
 /*
@@ -66,7 +72,7 @@ export class UserController {
       throw new ForbiddenException('Usuário inativo');
     }
 */
-    return this.userService.findOne(user.id);
+    return this.userService.findOne(Id);
   }
 
   @Get(':id')
