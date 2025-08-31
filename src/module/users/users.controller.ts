@@ -63,12 +63,16 @@ export class UserController {
     if (!user) {
       throw new UnauthorizedException('Usuário não autenticado');
     }
+    const Id = user.sub || user.id;
+    if (!Id) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
 /*
     if (!user.isActive) {
       throw new ForbiddenException('Usuário inativo');
     }
 */
-    return this.userService.findOne(user.id);
+    return this.userService.findOne(Id);
   }
 
   @Get(':id')

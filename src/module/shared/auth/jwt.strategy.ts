@@ -19,7 +19,7 @@ super({
 });
   }
   async validate(payload: any) {
-    return { id: payload.id, email: payload.email, type: payload.type ,isActive:payload.isActive};
+    return { id: payload.sub, email: payload.email, type: payload.type ,isActive:payload.isActive};
   }
 }
 
