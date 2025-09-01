@@ -132,7 +132,11 @@ export class UserService {
         isActive: true,
         createdAt: true,
         updatedAt: true,
-        clientProfile: true,
+        clientProfile: {
+          include: {
+            contract:true
+          }
+        },
        
       },
 

@@ -603,6 +603,7 @@ model User {
   firstName     String
   lastName      String
   email         String          @unique
+  //nif            String?      @unique
   password      String
   isActive      Boolean         @default(true)
   type          UserType        @default(INDIVIDUAL)
