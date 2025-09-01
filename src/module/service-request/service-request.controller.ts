@@ -40,6 +40,25 @@ export class ServiceRequestController {
     
     return this.serviceRequestService.findAll(query);
   }
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Lista todas as solicitações de serviço de um usuário específico.' })  
+  @ApiOkResponse({ type: PaginatedDto, description: 'Lista de solicitações do usuário paginada.' })
+  findAllByUser(
+    @Param('userId') userId: string,
+    @Query() query: FilterServiceRequestsDto,
+  ): Promise<PaginatedDto<ServiceRequest>> {
+    return this.serviceRequestService.findServiceRequestByUserId(userId, query);
+  }
+
+  @Get('company/:companyNif')
+  @ApiOperation({ summary: 'Lista todas as solicitações de serviço de uma empresa específica.' })  
+  @ApiOkResponse({ type: PaginatedDto, description: 'Lista de solicitações da empresa paginada.' })
+  findAllByCompany(
+    @Param('companyNif') companyNif: string,
+    @Query() query: FilterServiceRequestsDto,
+  ): Promise<PaginatedDto<ServiceRequest>> {
+    return this.serviceRequestService.findServiceRequestByCompanyNif(companyNif, query);
+  }
 
   @Get(':id')
   @ApiOperation({ summary: 'Busca uma solicitação de serviço pelo ID.' })

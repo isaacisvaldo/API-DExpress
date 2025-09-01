@@ -128,10 +128,16 @@ export class UserService {
         firstName: true,
         lastName: true,
         type: true,
+        avatar: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
-        clientProfile: true,
+        clientProfile: {
+          include: {
+            contract:true
+          }
+        },
+       
       },
 
     });
