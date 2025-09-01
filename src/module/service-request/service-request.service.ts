@@ -61,6 +61,13 @@ export class ServiceRequestService {
     };
 
     if (requesterType === UserType.INDIVIDUAL) {
+      const verifyRequeser = await this.prisma.serviceRequest.findFirst({
+        where: {
+          individualUserId: individualUserId,
+          status: "PENDING"
+        }
+      })
+      if (verifyRequeser) throw new BadRequestException("Já existe uma solicitação pendente para este usuário")
       const user = await this.prisma.user.findUnique({
         where: {
           id: individualUserId
@@ -82,23 +89,32 @@ export class ServiceRequestService {
         professionalId,
       });
     } else if (requesterType === UserType.CORPORATE) {
+      const verifyRequeser = await this.prisma.serviceRequest.findFirst({
+        where: {
+          companyNif: companyNif,
+          status: "PENDING"
+        }
+      })
+      if (verifyRequeser) throw new BadRequestException("Já existe uma solicitação pendente para esta empresa")
       const District = await this.prisma.district.findUnique({
         where: {
           id: companyDistrictId
         }
       })
+       if (!District) throw new NotFoundException("Distrito Não encontrado")
       const Sector = await this.prisma.sector.findUnique({
         where: {
           id: companySectorId
         }
       })
+        if (!Sector) throw new NotFoundException("Sector Não encontrado")
       const plan = await this.prisma.package.findUnique({
         where: {
           id: planId
         }
       })
-      if (!District) throw new NotFoundException("Distrito Não encontrado")
-      if (!Sector) throw new NotFoundException("Sector Não encontrado")
+     
+  
       if (!plan) throw new NotFoundException("Plano Não Identificado")
       Object.assign(requestData, {
         companyRequesterName,
@@ -252,6 +268,122 @@ async findAll(query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequ
       throw error;
     }
   }
+  async findServiceRequestByUserId(userId: string,query): Promise<PaginatedDto<ServiceRequest>> {
+    const page = query.page || 1;
+  const limit = query.limit || 10;
+  const skip = (page - 1) * limit;
+
+  // Combine todas as condições de filtro
+  const filtersWhere: Prisma.ServiceRequestWhereInput = {
+    individualUserId: userId,
+    // Filtro de busca (search)
+    ...(query.search && {
+      OR: [
+        { requesterEmail: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+        { individualRequesterName: { contains: query.search, mode: 'insensitive' } },
+       
+      ],
+    }),
+
+    // Filtro por tipo de solicitante (requesterType)
+    ...(query.requesterType && {
+      requesterType: query.requesterType,
+    }),
+
+    // Filtro por status
+    ...(query.status && {
+      status: query.status,
+    }),
+
+    // Filtro por descrição (se necessário)
+    ...(query.description && {
+      description: { contains: query.description, mode: 'insensitive' },
+    }),
+  };
+
+  const [requests, total] = await this.prisma.$transaction([
+    this.prisma.serviceRequest.findMany({
+      skip,
+      take: limit,
+      where: filtersWhere,
+      include: {
+        individualClient: true,
+        companyClient: true,
+      },
+    }),
+    this.prisma.serviceRequest.count({ where: filtersWhere }),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    data: requests,
+    total,
+    page,
+    limit,
+    totalPages,
+  };
+   
+  }
+  async findServiceRequestByCompanyNif(companyNif: string,query): Promise<PaginatedDto<ServiceRequest>> {
+   const page = query.page || 1;
+  const limit = query.limit || 10;
+  const skip = (page - 1) * limit;
+
+  // Combine todas as condições de filtro
+  const filtersWhere: Prisma.ServiceRequestWhereInput = {
+    companyNif: companyNif,
+    // Filtro de busca (search)
+    ...(query.search && {
+      OR: [
+        { requesterEmail: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+       
+        { companyRequesterName: { contains: query.search, mode: 'insensitive' } },
+      ],
+    }),
+
+    // Filtro por tipo de solicitante (requesterType)
+    ...(query.requesterType && {
+      requesterType: query.requesterType,
+    }),
+
+    // Filtro por status
+    ...(query.status && {
+      status: query.status,
+    }),
+
+    // Filtro por descrição (se necessário)
+    ...(query.description && {
+      description: { contains: query.description, mode: 'insensitive' },
+    }),
+  };
+
+  const [requests, total] = await this.prisma.$transaction([
+    this.prisma.serviceRequest.findMany({
+      skip,
+      take: limit,
+      where: filtersWhere,
+      include: {
+        individualClient: true,
+        companyClient: true,
+      },
+    }),
+    this.prisma.serviceRequest.count({ where: filtersWhere }),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    data: requests,
+    total,
+    page,
+    limit,
+    totalPages,
+  };
+   
+  }
 
   /**
    * Envia um e-mail de confirmação de recebimento da solicitação.
@@ -288,4 +420,5 @@ async findAll(query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequ
       html: htmlContent,
     });
   }
+
 }
