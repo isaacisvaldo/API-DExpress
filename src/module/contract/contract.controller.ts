@@ -7,13 +7,14 @@ import {
   Param,
   Delete,
   Query,
+  Put,
 } from '@nestjs/common';
 import { ContractService } from './contract.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { FilterContractDto } from './dto/filter-contract.dto';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
-import { Contract, Prisma } from '@prisma/client';
+import { Contract, ContractStatus, Prisma } from '@prisma/client';
 import {
   ApiTags,
   ApiOperation,
@@ -22,6 +23,7 @@ import {
   ApiBody,
   ApiParam,
 } from '@nestjs/swagger';
+import { UpdateContractStatusDto } from './dto/UpdateContractStatusDto';
 
 // Define o tipo do contrato com as relações para tipagem no controller
 const contractInclude = {
@@ -51,6 +53,40 @@ type ContractWithRelations = Prisma.ContractGetPayload<{
 @Controller('contracts')
 export class ContractController {
   constructor(private readonly contractService: ContractService) {}
+   private readonly statusLabels: Record<ContractStatus, string> = {
+   [ContractStatus.DRAFT]: "Rascunho",
+   [ContractStatus.PENDING_SIGNATURE]: "Pendente de assinatura",
+   [ContractStatus.EXPIRED]: "Expirado",
+   [ContractStatus.ACTIVE]: "Ativo",
+   [ContractStatus.TERMINATED]: "Terminado",
+   [ContractStatus.CANCELED]: "Cancelado",
+   [ContractStatus.PAUSED]: "Pausado",
+   [ContractStatus.COMPLETED]: "Completo",
+  
+  
+ };
+
+  @Get("statuses")
+  @ApiOperation({ summary: "Lista todos os status possíveis de contrato com rótulos" })
+  @ApiOkResponse({
+    description: "Lista de status do contrato com value e label",
+    schema: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          value: { type: "string" },
+          label: { type: "string" },
+        },
+      },
+    },
+  })
+  getStatuses(): { value: string; label: string }[] {
+    return Object.values(ContractStatus).map((status) => ({
+      value: status,
+      label: this.statusLabels[status],
+    }));
+  }
 
   @Post()
   @ApiOperation({ summary: 'Cria um novo contrato' })
@@ -74,8 +110,28 @@ export class ContractController {
   async findOne(@Param('id') id: string): Promise<ContractWithRelations> {
     return this.contractService.findOne(id);
   }
+  @Patch(":id/status")
+  @ApiOperation({ summary: "Atualiza o status de um contrato" })
+  @ApiParam({ name: "id", description: "ID do contrato", type: String })
+  @ApiBody({
+    description: "Novo status do contrato",
+    type: UpdateContractStatusDto,
+    examples: {
+      exemplo: {
+        value: { status: "EXPIRED" }, 
+      },
+    },
+  })
+  @ApiOkResponse({ description: "Contrato atualizado com sucesso." })
+  async updateStatus(
+    @Param("id") id: string,
+    @Body() body: UpdateContractStatusDto
+  ) {
+    return this.contractService.updateContractStatus(id, body.status);
+  }
 
-  @Patch(':id')
+  
+  @Put(':id')
   @ApiOperation({ summary: 'Atualiza um contrato' })
   @ApiParam({ name: 'id', description: 'ID do contrato', type: String })
   @ApiBody({ type: UpdateContractDto })
@@ -94,4 +150,5 @@ export class ContractController {
   async remove(@Param('id') id: string): Promise<Contract> {
     return this.contractService.remove(id);
   }
+
 }

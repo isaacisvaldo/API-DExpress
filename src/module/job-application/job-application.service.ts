@@ -3,8 +3,7 @@ import { CreateJobApplicationDto } from './dto/create-job-application.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { UpdateJobApplicationStatusDto } from './dto/update-status.dto';
 import { FilterJobApplicationDto } from './dto/filter-job-application.dto';
-import { testDomains } from 'src/common/test-domain';
-import * as dns from 'dns';
+
 
 @Injectable()
 export class JobApplicationService {
@@ -12,41 +11,7 @@ export class JobApplicationService {
 
  async create(createDto: CreateJobApplicationDto) {
 
-      const domain = createDto.email.split('@')[1];
-      
-        // 1. Verificação se o e-mail é de teste (nova verificação)
-        if (testDomains.includes(domain)) {
-          throw new BadRequestException('E-mails de teste não são permitidos.');
-        }
-        // 1. Validação do formato do e-mail
-        const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createDto.email);
-        if (!isValidFormat) {
-          throw new BadRequestException('Formato de e-mail inválido.');
-        }
-        // 2. Verificação do domínio (registros MX)
-      
-        try {
-          const mxRecords = await new Promise<dns.MxRecord[]>((resolve, reject) => {
-            dns.resolveMx(domain, (err, addresses) => {
-              if (err) {
-                // Se houver erro, rejeita a Promise
-                return reject(err);
-              }
-              // Se der certo, resolve a Promise com o array de registros
-              resolve(addresses);
-            });
-          });
-      
-          // Agora mxRecords é garantido ser um array,
-          // então a verificação do length funciona
-          if (mxRecords.length === 0) {
-            throw new BadRequestException('O domínio do e-mail não é válido.');
-          }
-        } catch (error) {
-         
-          throw new BadRequestException('O domínio do e-mail não é válido.');
-        }
-        
+   
 
       
     // 2. Verificação da existência de TODOS os IDs relacionados

@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { IsValidEmail } from 'src/common/validators/is-valid-email';
 
 export class CreateProfessionalDto {
   @ApiProperty({ example: 'Maria Joaquina', description: 'Nome completo do profissional' })
@@ -19,6 +20,7 @@ export class CreateProfessionalDto {
 
   @ApiProperty({ example: 'maria@example.com', description: 'Email do profissional' })
   @IsEmail()
+   @IsValidEmail() 
   email: string;
 
   @ApiProperty({ example: '+244912345678', description: 'Telefone do profissional' })

@@ -35,6 +35,12 @@ export class ProfessionalController {
   getPublicProfessionals(@Query() filter: FilterProfessionalDto): Promise<PaginatedDto<Professional>> {
     return this.professionalService.getPublicProfessionals(filter);
   }
+  @Get('dropdown')
+  @ApiOperation({ summary: 'Lista todos os profissionais para dropdown' })
+  @ApiOkResponse({  description: 'Lista de profissionais para dropdown.' })
+  findAllForDropdown(): Promise<Professional[]> {
+    return this.professionalService.findAllForDropdown();
+  }
 
   @Get(':id')
   @ApiOperation({ summary: 'Busca um profissional pelo ID' })

@@ -7,8 +7,9 @@ import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { FilterContractDto } from './dto/filter-contract.dto';
-import { Contract, Prisma, UserType } from '@prisma/client';
+import { Contract, ContractStatus, Prisma, UserType } from '@prisma/client';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
+import { ContractNumberHelper } from 'src/helpers/contract-number.helper';
 
 
 const contractInclude = {
@@ -38,7 +39,7 @@ type ContractWithRelations = Prisma.ContractGetPayload<{
 
 @Injectable()
 export class ContractService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService,  private readonly contractNumberHelper: ContractNumberHelper) { }
 
   /**
    * Cria um novo contrato no banco de dados.
@@ -48,6 +49,8 @@ export class ContractService {
    * @throws NotFoundException Se um ID de relacionamento não for encontrado.
    * @throws BadRequestException Se os dados de cliente/profissional não forem consistentes.
    */
+
+
   async create(createContractDto: CreateContractDto): Promise<ContractWithRelations> {
     const {
       professionalId,
@@ -56,91 +59,167 @@ export class ContractService {
       companyClientId,
       packageId,
       desiredPositionId,
-      locationId,
+      location,
       ...contractData
     } = createContractDto;
+
+
+
+// Estados que bloqueiam nova contratação
+const invalidStatuses: ContractStatus[] = [
+  ContractStatus.DRAFT,
+  ContractStatus.PENDING_SIGNATURE,
+  ContractStatus.EXPIRED,
+];
+
+let clientField: "individualClientId" | "companyClientId" | null = null;
+let clientId: string | null = null;
+
+if (contractData.clientType === UserType.INDIVIDUAL) {
+  clientField = "individualClientId";
+  clientId = individualClientId ?? null; 
+} else if (contractData.clientType === UserType.CORPORATE) {
+  clientField = "companyClientId";
+  clientId = companyClientId ?? null; 
+}
+
+if (clientField && clientId) {
+  const existingContract = await this.prisma.contract.findFirst({
+    where: {
+      [clientField]: clientId,
+      status: { in: invalidStatuses },
+    },
+  });
+
+  if (existingContract) {
+    throw new BadRequestException(
+      `Não é possível criar novo contrato. O cliente já possui um contrato no estado ${existingContract.status}.`
+    );
+  }
+}
+
+
 
     // Validação de consistência de dados
     if (contractData.clientType === UserType.INDIVIDUAL) {
       if (!individualClientId || !professionalId) {
-        throw new BadRequestException('Para clientes individuais, `individualClientId` e `professionalId` são obrigatórios.');
+        throw new BadRequestException(
+          'Para clientes individuais, `individualClientId` e `professionalId` são obrigatórios.'
+        );
       }
     } else if (contractData.clientType === UserType.CORPORATE) {
       if (!companyClientId || !professionalIds || professionalIds.length === 0) {
-        throw new BadRequestException('Para clientes empresariais, `companyClientId` e `professionalIds` são obrigatórios.');
+        throw new BadRequestException(
+          'Para clientes empresariais, `companyClientId` e `professionalIds` são obrigatórios.'
+        );
       }
     }
-    // Transação para garantir atomicidade
+        
+
     return this.prisma.$transaction(async (prisma) => {
-      // 1. Se houver professionalIds, valida se eles existem
+      // 1. Valida se os profissionais existem
       if (professionalIds && professionalIds.length > 0) {
         const existingProfessionals = await prisma.professional.findMany({
-          where: {
-            id: { in: professionalIds },
-          },
+          where: { id: { in: professionalIds } },
           select: { id: true },
         });
 
         if (existingProfessionals.length !== professionalIds.length) {
           const foundIds = existingProfessionals.map((p) => p.id);
-          const notFoundIds = professionalIds.filter(
-            (id) => !foundIds.includes(id),
+          const notFoundIds = professionalIds.filter((id) => !foundIds.includes(id));
+          throw new NotFoundException(
+            `Os seguintes IDs de profissionais não foram encontrados: ${notFoundIds.join(', ')}`
           );
-          throw new NotFoundException(`Os seguintes IDs de profissionais não foram encontrados: ${notFoundIds.join(', ')}`);
         }
       }
 
-      // 2. Criação do Contrato principal
-      const newContract = await prisma.contract.create({
+      // 2. Criação da Localização
+      const endereco = await prisma.location.create({
         data: {
-          ...contractData,
-          // Conecta os relacionamentos de cliente, pacote, etc.
-          ...(individualClientId && {
-            individualClient: { connect: { id: individualClientId } },
-          }),
-          ...(companyClientId && {
-            companyClient: { connect: { id: companyClientId } },
-          }),
-          ...(packageId && {
-            package: { connect: { id: packageId } },
-          }),
-          ...(desiredPositionId && {
-            desiredPosition: { connect: { id: desiredPositionId } },
-          }),
-          location: { connect: { id: locationId } },
-          // Apenas um professionalId para clientes individuais
-          ...(professionalId && {
-            professional: { connect: { id: professionalId } },
-          }),
+          cityId: location.cityId,
+          districtId: location.districtId,
+          street: location.street,
         },
       });
 
-      // 3. Se for um cliente empresarial, cria as entradas na tabela de junção
-      if (
-        contractData.clientType === UserType.CORPORATE &&
-        professionalIds &&
-        professionalIds.length > 0
-      ) {
-        const contractPackageProfessionalData = professionalIds.map(
-          (id) => ({
-            professionalId: id,
-            contractId: newContract.id,
-          }),
-        );
+      // 3. Montagem do contrato base
+     const contractNumber = await this.contractNumberHelper.generate();
+       
+        let contractDataToSave: any = {
+         contractNumber,
+        title: contractData.title ?? "Contract Title",
+        clientType: contractData.clientType,
+        packageId: packageId ?? null,
+        desiredPositionId: desiredPositionId ?? null,
+        description: contractData.description ?? "",
+        serviceFrequency: "MONTHLY",
+        agreedValue: contractData.agreedValue ?? 0.0,
+        discountPercentage: contractData.discountPercentage ?? 0.0,
+        finalValue: contractData.finalValue ?? 0.0,
+        paymentTerms: contractData.paymentTerms ?? "Teste",
+        startDate: contractData.startDate ? new Date(contractData.startDate) : new Date(),
+        endDate: contractData.endDate ? new Date(contractData.endDate) : null,
+        status: "ACTIVE",
+        locationId: endereco.id,
+        notes: contractData.notes ?? null,
+      };
+
+      // 4. Diferenciação por tipo de cliente
+      if (contractData.clientType === UserType.INDIVIDUAL) {
+        contractDataToSave = {
+          ...contractDataToSave,
+          packageId: null,
+          professionalId,
+          individualClientId,
+          companyClientId: null,
+        };
+      } else if (contractData.clientType === UserType.CORPORATE) {
+        contractDataToSave = {
+          ...contractDataToSave,
+          professionalId: null,
+          desiredPositionId: null,
+          individualClientId: null,
+          companyClientId,
+        };
+      }
+
+      // 5. Criação do contrato
+      const newContract = await prisma.contract.create({
+        data: contractDataToSave,
+      });
+
+      // 6. Criação da tabela de junção PARA CLIENTES CORPORATIVOS
+      if (contractData.clientType === UserType.CORPORATE && professionalIds && professionalIds.length > 0) {
+        const contractPackageProfessionalData = professionalIds.map((id) => ({
+          professionalId: id,
+          contractId: newContract.id,
+        }));
+
         await prisma.contractPackegeProfissional.createMany({
           data: contractPackageProfessionalData,
         });
       }
-
-      // Retorna o contrato recém-criado com suas relações
+   await this.marcarProfissionaisIndisponiveis(
+  prisma,
+  contractData.clientType,
+  professionalId,
+  professionalIds,
+);
+     
       const createdContract = await prisma.contract.findUnique({
         where: { id: newContract.id },
         include: contractInclude,
       });
-      // Usa o operador de asserção de não-nulo, pois o registro acabou de ser criado.
+
       return createdContract!;
+    }, {
+      timeout: 30000,
     });
+
+
+
   }
+
 
   /**
    * Busca contratos com filtros e paginação.
@@ -168,10 +247,10 @@ export class ContractService {
       // Filtra por IDs de profissionais através da tabela de junção
       contractPackegeProfissional: filter.professionalIds
         ? {
-            some: {
-              professionalId: { in: filter.professionalIds },
-            },
-          }
+          some: {
+            professionalId: { in: filter.professionalIds },
+          },
+        }
         : undefined,
     };
 
@@ -216,6 +295,26 @@ export class ContractService {
     return contract;
   }
 
+    /**
+   * Atualiza o status de um contrato
+   * @param contractId ID do contrato
+   * @param newStatus Novo status (enum ContractStatus)
+   */
+  async updateContractStatus(contractId: string, newStatus: ContractStatus) {
+    // Verifica se o contrato existe
+    const contract = await this.findOne(contractId);
+    if (!contract) {
+      throw new NotFoundException(`Contrato com ID ${contractId} não encontrado.`);
+    }
+
+    // Atualiza o status
+    return this.prisma.contract.update({
+      where: { id: contractId },
+      data: { status: newStatus },
+    });
+  }
+
+
   /**
    * Atualiza um contrato existente.
    * @param id O ID do contrato a ser atualizado.
@@ -231,10 +330,9 @@ export class ContractService {
       companyClientId,
       packageId,
       desiredPositionId,
-      locationId,
+      location,
       ...contractData
     } = updateContractDto;
-
     // Use uma transação para garantir a atomicidade da atualização
     return this.prisma.$transaction(async (prisma) => {
       // 1. Atualiza os dados diretos do contrato
@@ -255,9 +353,7 @@ export class ContractService {
           ...(desiredPositionId !== undefined && {
             desiredPosition: { connect: { id: desiredPositionId } },
           }),
-          ...(locationId !== undefined && {
-            location: { connect: { id: locationId } },
-          }),
+
           // Atualiza o professionalId para clientes individuais
           ...(professionalId !== undefined && {
             professional: { connect: { id: professionalId } },
@@ -311,4 +407,38 @@ export class ContractService {
       throw error;
     }
   }
+
+
+async marcarProfissionaisIndisponiveis(
+  prisma: Prisma.TransactionClient, 
+  clientType: UserType,
+  professionalId?: string,
+  professionalIds?: string[],
+) {
+  if (clientType === UserType.INDIVIDUAL && professionalId) {
+    await prisma.professional.update({
+      where: { id: professionalId },
+      data: { isAvailable: false },
+    });
+  }
+
+  if (clientType === UserType.CORPORATE && professionalIds && professionalIds.length > 0) {
+    await prisma.professional.updateMany({
+      where: { id: { in: professionalIds } },
+      data: { isAvailable: false },
+    });
+  }
 }
+
+
+}
+let lastSequence = 0; 
+async function generateContractNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  lastSequence++;
+  const sequence = String(lastSequence).padStart(5, "0");
+  const randomCode = Math.random().toString(36).substr(2, 2).toUpperCase();
+
+  return `DEXPRESS-${year}-${sequence}/${randomCode}`;
+}
+
