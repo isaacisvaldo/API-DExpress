@@ -9,6 +9,8 @@ COMPOSE_PROD=-f docker-compose.yml -f docker-compose.prod.yml
 # ========================
 # Comandos Gerais
 # ========================
+up-dev-no-build:
+	docker compose $(COMPOSE_DEV) up -d
 
 # Subir containers em modo DEV (com hot reload e volumes)
 up-dev:

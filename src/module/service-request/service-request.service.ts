@@ -310,6 +310,7 @@ async findAll(query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequ
       include: {
         individualClient: true,
         companyClient: true,
+        professional:true
       },
     }),
     this.prisma.serviceRequest.count({ where: filtersWhere }),
@@ -368,6 +369,7 @@ async findAll(query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequ
       include: {
         individualClient: true,
         companyClient: true,
+        package:true
       },
     }),
     this.prisma.serviceRequest.count({ where: filtersWhere }),

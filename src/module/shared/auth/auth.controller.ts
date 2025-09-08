@@ -57,6 +57,9 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const refreshToken = req.cookies?.refresh_token;
+
+  console.log("REFRESH TOKEN",refreshToken);
+  
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token não fornecido');
     }
@@ -64,7 +67,7 @@ export class AuthController {
     const { accessToken } = await this.authService.refreshAccessToken(
       refreshToken,
     );
-
+ console.log("NEW TOKEN",accessToken);
     res.cookie('access_token', accessToken, {
       httpOnly: true,
        secure: isProduction ? true : false,
@@ -72,6 +75,8 @@ export class AuthController {
       sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict',
       maxAge: 60 * 60 * 1000, 
     });
+   
+    
 
     return { success: true,accessToken};
   }

@@ -127,6 +127,8 @@ model Professional {
 
   contract                    Contract[]
   contractPackegeProfissional ContractPackegeProfissional[]
+
+  ServiceRequest ServiceRequest[]
 }
 
 model GeneralAvailability {
@@ -408,6 +410,8 @@ model ServiceRequest {
   // Fields for the Service (only one is populated)
   planId         String? // ID do plano (para empresas)
   professionalId String? // ID do profissional (para pessoas normais)
+  professional   Professional? @relation(fields: [professionalId], references: [id])
+  package           Package?      @relation(fields: [planId], references: [id])
 
   // Optional relations to client profiles (filled after registration)
   individualClientId String? // ID do cliente individual, após registo
@@ -474,6 +478,8 @@ model Package {
   // Campo para armazenar as informações adicionais como um array de objetos
   details     Json?
   contract    Contract[]
+
+  ServiceRequest ServiceRequest[]
 }
 
 // Tabela para os Métodos de Pagamento
@@ -495,6 +501,7 @@ enum ContractStatus {
   COMPLETED
   TERMINATED
   EXPIRED
+  CANCELED
 }
 
 model Contract {
@@ -537,12 +544,17 @@ model Contract {
 
   contractPackegeProfissional ContractPackegeProfissional[]
 }
+model contractSequence {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+}
+
 
 model ContractPackegeProfissional {
   id             String       @id @default(uuid())
   professional   Professional @relation(fields: [professionalId], references: [id])
   professionalId String
-  contract       Contract     @relation(fields: [contractId], references: [id])
+   contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
   contractId     String
   isActive       Boolean      @default(true)
 }
@@ -672,4 +684,10 @@ model NotificationSettings {
   marketing Boolean   @default(true)
   weekly    Boolean   @default(true)
   adminUser AdminUser @relation(fields: [userId], references: [id])
+}
+
+model NewsletterSubscriber {
+  id        String    @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
 }

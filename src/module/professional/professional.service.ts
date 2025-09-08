@@ -5,8 +5,6 @@ import { UpdateProfessionalDto } from './dto/update-professional.dto';
 import { FilterProfessionalDto } from './dto/filter-professional.dto'; 
 import { Professional, Prisma } from '@prisma/client';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto'; 
-import * as dns from 'dns';
-import { testDomains } from 'src/common/test-domain';
 import { CreateProfessionalExperienceDto } from './dto/create-professional-experience.dto';
 
 @Injectable()
@@ -23,40 +21,7 @@ export class ProfessionalService {
       ...professionalData
     } = createProfessionalDto;
    
-     const domain = createProfessionalDto.email.split('@')[1];
     
-      // 1. Verificação se o e-mail é de teste (nova verificação)
-      if (testDomains.includes(domain)) {
-        throw new BadRequestException('E-mails de teste não são permitidos.');
-      }
-      // 1. Validação do formato do e-mail
-      const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createProfessionalDto.email);
-      if (!isValidFormat) {
-        throw new BadRequestException('Formato de e-mail inválido.');
-      }
-      // 2. Verificação do domínio (registros MX)
-    
-      try {
-        const mxRecords = await new Promise<dns.MxRecord[]>((resolve, reject) => {
-          dns.resolveMx(domain, (err, addresses) => {
-            if (err) {
-              // Se houver erro, rejeita a Promise
-              return reject(err);
-            }
-            // Se der certo, resolve a Promise com o array de registros
-            resolve(addresses);
-          });
-        });
-    
-        // Agora mxRecords é garantido ser um array,
-        // então a verificação do length funciona
-        if (mxRecords.length === 0) {
-          throw new BadRequestException('O domínio do e-mail não é válido.');
-        }
-      } catch (error) {
-        throw new BadRequestException('O domínio do e-mail não é válido.');
-      }
-      
       // 3. Verificação de usuário existente
       const existingUser = await this.findByEmail(createProfessionalDto.email);
       if (existingUser) {
@@ -235,6 +200,17 @@ export class ProfessionalService {
     };
   }
 
+ async findAllForDropdown(): Promise<Professional[]> {
+    return this.prisma.professional.findMany({
+      where: { isAvailable: true },
+     
+      orderBy: {
+        fullName: 'asc',
+      },
+    });
+  }
+
+
   // ... (findOne method - remains unchanged as it's correct for its purpose) ...
 
   async findOne(id: string) {
@@ -407,17 +383,43 @@ export class ProfessionalService {
    * @param isAvailable O novo estado de disponibilidade (true ou false).
    * @returns O objeto Professional atualizado.
    */
-  async updateAvailability(id: string, isAvailable: boolean): Promise<Professional> {
-    const professional = await this.prisma.professional.findUnique({ where: { id } });
-    if (!professional) {
-      throw new NotFoundException(`Profissional com ID "${id}" não encontrado.`);
-    }
+async updateAvailability(id: string, isAvailable: boolean): Promise<Professional> {
+  const professional = await this.prisma.professional.findUnique({
+    where: { id },
+    include: {
+      contract: {
+        where: { status: 'ACTIVE' },
+        select: { id: true },
+      },
+      contractPackegeProfissional: {
+        where: { isActive: true },
+        select: { id: true },
+      },
+    },
+  });
 
-    return this.prisma.professional.update({
-      where: { id },
-      data: { isAvailable }, 
-    });
+  if (!professional) {
+    throw new NotFoundException(`Profissional com ID "${id}" não encontrado.`);
   }
+
+  // Verifica contratos ativos diretos ou via package
+  const hasActiveDirect = professional.contract.length > 0;
+  const hasActivePackage = professional.contractPackegeProfissional.some(
+    (cp) => cp.id !== null
+  );
+
+  if (isAvailable && (hasActiveDirect || hasActivePackage)) {
+    throw new BadRequestException(
+      `O profissional não pode estar disponível enquanto tiver contratos ativos.`
+    );
+  }
+
+  return this.prisma.professional.update({
+    where: { id },
+    data: { isAvailable },
+  });
+}
+
 
     async updateImageUrl(id: string, profileImage: string): Promise<Professional> {
     const professional = await this.prisma.professional.findUnique({ where: { id } });

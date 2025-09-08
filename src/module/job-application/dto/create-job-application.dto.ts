@@ -15,6 +15,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import { CreateLocationDto } from 'src/module/shared/location/dto/create-location.dto';
 import { CreateProfessionalExperienceDto } from 'src/module/professional/dto/create-professional-experience.dto';
+import { IsValidEmail } from 'src/common/validators/is-valid-email';
 
 export class CreateJobApplicationDto {
   @ApiProperty({ example: 'Isaac Bunga' })
@@ -36,6 +37,7 @@ export class CreateJobApplicationDto {
 
   @ApiProperty({ example: 'isaac@email.com' })
   @IsEmail()
+   @IsValidEmail() 
   email: string;
 
   @ApiProperty({ example: '1990-06-25' })

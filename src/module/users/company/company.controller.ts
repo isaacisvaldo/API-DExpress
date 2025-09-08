@@ -37,6 +37,15 @@ export class ClientCompanyProfileController {
   findAll(@Query() query: FindAllDto): Promise<PaginatedDto<ClientCompanyProfile>> {
     return this.profileService.findAll(query);
   }
+  @Get('all')
+  @ApiOperation({ summary: 'Lista todos os perfis de empresa sem paginação, com pesquisa opcional.' })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiResponse({ status: 200, description: 'Lista de todos os perfis.',})
+  findAllWithoutPagination(
+    @Query('search') search?: string,
+  ): Promise<ClientCompanyProfile[]> {
+    return this.profileService.findAllWithoutPagination(search);
+  }
 
   @Post()
   @ApiOperation({

@@ -58,7 +58,7 @@ export class UserController {
   @ApiOkResponse({ description: 'Detalhes do usuário autenticado.' })
   getCurrentUser(@Req() req: any) {
     const user = req.user;
-    console.log('user', user);
+   
     
     if (!user) {
       throw new UnauthorizedException('Usuário não autenticado');
