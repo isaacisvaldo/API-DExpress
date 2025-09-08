@@ -28,7 +28,6 @@ export class NewsletterService {
    */
   async create(createNewsletterSubscriberDto: CreateNewsletterSubscriberDto) {
     const { email } = createNewsletterSubscriberDto;
-
     // 1. Verifica se já existe um assinante com o mesmo e-mail
     const existingSubscriber = await this.prisma.newsletterSubscriber.findUnique({
       where: { email },

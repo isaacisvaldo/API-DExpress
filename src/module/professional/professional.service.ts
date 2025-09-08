@@ -174,16 +174,12 @@ export class ProfessionalService {
           location: { include: { city: true, district: true } },
           desiredPosition: true,
           gender: true,
-          jobApplication: true,
+  
           experienceLevel: true,
           maritalStatus: true,
           highestDegree: true,
-          availability: true,
-          Document: true,
-          ProfessionalExperience: true,
-          professionalCourses: { include: { course: true } },
-          professionalLanguages: { include: { language: true } },
-          professionalSkills: { include: { skill: true } },
+      
+         
         },
       }),
       this.prisma.professional.count({ where }),
