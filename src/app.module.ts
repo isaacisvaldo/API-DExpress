@@ -38,6 +38,7 @@ import { ServiceRequestModule } from './module/service-request/service-request.m
 import { FileService } from './module/shared/upload/file.service';
 import { FileController } from './module/shared/upload/file.controller';
 import { ContractModule } from './module/contract/contract.module';
+import { NewsletterSubscriberModule } from './module/newsletter-subscriber/newsletter-subscriber.module';
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { ContractModule } from './module/contract/contract.module';
     PackageModule,
     ServiceRequestModule,
     ContractModule,
+    NewsletterSubscriberModule,
   ],
   controllers: [AppController, EmailController,FileController],
   providers: [

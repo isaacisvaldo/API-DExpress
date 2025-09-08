@@ -685,3 +685,9 @@ model NotificationSettings {
   weekly    Boolean   @default(true)
   adminUser AdminUser @relation(fields: [userId], references: [id])
 }
+
+model NewsletterSubscriber {
+  id        String    @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
