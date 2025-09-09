@@ -328,7 +328,24 @@ export class ServiceRequestService {
               hasCriminalRecord: true,
               hasMedicalCertificate: true,
               hasTrainingCertificate: true,
-              location: true,
+              location: {
+                select: {
+                  id: true,
+                  street: true,
+                 city: {
+                    select:{
+                      name:true
+                    }
+                  },
+                  district:{
+                    select:{
+                      name:true
+                    }
+                  
+                  }
+                }
+                
+              },
               profileImage: true,
               gender: true,
               birthDate: true,

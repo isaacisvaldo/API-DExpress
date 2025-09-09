@@ -74,11 +74,10 @@ export class CreateJobApplicationDto {
   @ApiProperty({ example: true })
   @IsBoolean()
   hasChildren: boolean;
-
-  @ApiProperty({ example: 'Asma', required: false })
-  @IsOptional()
-  @IsString()
-  knownDiseases?: string;
+ @ApiProperty({ example: false, required: false })
+@IsOptional()
+@IsBoolean()
+knownDiseases?: boolean;
 
   @ApiProperty({ example: '2025-07-15' })
   @IsDateString()

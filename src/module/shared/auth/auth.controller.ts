@@ -58,7 +58,6 @@ export class AuthController {
   ) {
     const refreshToken = req.cookies?.refresh_token;
 
-  console.log("REFRESH TOKEN",refreshToken);
   
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token não fornecido');
@@ -67,7 +66,7 @@ export class AuthController {
     const { accessToken } = await this.authService.refreshAccessToken(
       refreshToken,
     );
- console.log("NEW TOKEN",accessToken);
+
     res.cookie('access_token', accessToken, {
       httpOnly: true,
        secure: isProduction ? true : false,

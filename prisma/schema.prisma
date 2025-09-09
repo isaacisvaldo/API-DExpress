@@ -61,9 +61,9 @@ model JobApplication {
   highestDegreeId        String
   maritalStatusId        String?
   experienceLevelId      String?
-  generalAvailabilityId  String?
+
   hasChildren            Boolean
-  knownDiseases          String? // Doenças
+  knownDiseases           Boolean  @default(false)
   availabilityDate       String
   ProfessionalExperience Experience[]
   desiredPosition        DesiredPosition      @relation(fields: [desiredPositionId], references: [id])
@@ -73,7 +73,7 @@ model JobApplication {
   highestDegree          HighestDegree        @relation(fields: [highestDegreeId], references: [id])
   maritalStatus          MaritalStatus?       @relation(fields: [maritalStatusId], references: [id])
   experienceLevel        ExperienceLevel?     @relation(fields: [experienceLevelId], references: [id])
-  generalAvailability    GeneralAvailability? @relation(fields: [generalAvailabilityId], references: [id])
+
   // Relacionamentos Many-to-Many nativos
   languages              Language[]
   skills                 Skill[]
@@ -100,13 +100,12 @@ model Professional {
   genderId               String
   birthDate              DateTime                @default(now())
   hasChildren            Boolean                 @default(false)
-  knownDiseases          String?
+ knownDiseases           Boolean  @default(false)
   expectedSalary         Int                     @default(0)
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   jobApplicationId       String?                 @unique
   desiredPositionId      String
-  availabilityTypeId     String
   experienceLevelId      String
   // Relações
   desiredPosition        DesiredPosition         @relation(fields: [desiredPositionId], references: [id])
@@ -135,7 +134,6 @@ model GeneralAvailability {
   id             String           @id @default(uuid())
   name           String           @unique
   label          String
-  JobApplication JobApplication[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @default(now()) @updatedAt
 }
@@ -373,12 +371,9 @@ enum StatusRequest {
 }
 
 enum ServiceFrequency {
-  MONTHLY // Mensal
-  BIMONTHLY // Bimestral (a cada dois meses)
-  QUARTERLY // Trimestral
+  DAILY // Diária
   SEMIANNUALLY // Semestral
   ANNUALLY // Anual
-  BIENNIALLY // Bienal (a cada dois anos)
 }
 
 model ServiceRequest {
@@ -403,7 +398,7 @@ model ServiceRequest {
 
   // Request Details
   description      String // Descrição da solicitação
-  serviceFrequency ServiceFrequency @default(MONTHLY)
+  serviceFrequency ServiceFrequency?
   createdAt        DateTime         @default(now())
   status           StatusRequest    @default(PENDING) // Estado da solicitação
 
@@ -523,7 +518,7 @@ model Contract {
   desiredPosition    DesiredPosition?      @relation(fields: [desiredPositionId], references: [id])
   desiredPositionId  String?
   description        String
-  serviceFrequency   ServiceFrequency? @default(MONTHLY)
+  serviceFrequency   ServiceFrequency? 
   // Informações de Localização
   location           Location              @relation(fields: [locationId], references: [id])
   locationId         String

@@ -152,7 +152,7 @@ if (clientField && clientId) {
         packageId: packageId ?? null,
         desiredPositionId: desiredPositionId ?? null,
         description: contractData.description ?? "",
-        serviceFrequency: "MONTHLY",
+        serviceFrequency: "ANNUALLY",
         agreedValue: contractData.agreedValue ?? 0.0,
         discountPercentage: contractData.discountPercentage ?? 0.0,
         finalValue: contractData.finalValue ?? 0.0,
