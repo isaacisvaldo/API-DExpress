@@ -84,7 +84,7 @@ export class ProfessionalService {
         cityId: filter.cityId || undefined,
         districtId: filter.districtId || undefined,
       },
-      availabilityTypeId: filter.availabilityTypeId || undefined,
+    
       experienceLevelId: filter.experienceLevelId || undefined,
       desiredPositionId: filter.desiredPositionId || undefined,
       genderId: filter.genderId || undefined,
@@ -146,7 +146,7 @@ export class ProfessionalService {
         cityId: filter.cityId || undefined,
         districtId: filter.districtId || undefined,
       },
-      availabilityTypeId: filter.availabilityTypeId || undefined,
+    
       experienceLevelId: filter.experienceLevelId || undefined,
       desiredPositionId: filter.desiredPositionId || undefined,
       genderId: filter.genderId || undefined,

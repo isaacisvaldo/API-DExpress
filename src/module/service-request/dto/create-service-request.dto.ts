@@ -131,8 +131,8 @@ export class CreateServiceRequestDto {
 
   @ApiProperty({
     enum: ServiceFrequency,
-    description: 'Frequência do serviço: Mensal, Bimestral, Trimestral, Semestral, Anual ou Bienal.',
-    example: ServiceFrequency.QUARTERLY,
+    description: 'Frequência do serviço: Diario, Semestral, Anual.',
+    example: ServiceFrequency.ANNUALLY,
   })
   @IsEnum(ServiceFrequency)
   @IsNotEmpty()
