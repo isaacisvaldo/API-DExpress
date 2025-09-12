@@ -11,11 +11,12 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiOkResponse } from '@nestjs/swagger';
 
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
-import { ServiceRequest } from '@prisma/client';
+import { ServiceRequest, StatusRequest } from '@prisma/client';
 import { ServiceRequestService } from './service-request.service';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
 import { FilterServiceRequestsDto } from './dto/filter-service-requests.dto';
+import { CreateContractInRequestDto } from './dto/create-contract-inRequestService';
 
 @ApiTags('Service Requests')
 @Controller('service-requests')
@@ -40,6 +41,32 @@ export class ServiceRequestController {
     
     return this.serviceRequestService.findAll(query);
   }
+  @Post(':id/contract')
+  @ApiOperation({ summary: 'Cria um contrato para uma solicitação de serviço.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Contrato criado com sucesso.',
+  } )
+createContractInRequest(
+    @Param('id') id: string,
+    @Body() createContractInRequestDto: CreateContractInRequestDto,
+  ) {
+    return this.serviceRequestService.createContractInRequest(id, createContractInRequestDto);
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Atualiza o status de uma solicitação de serviço.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Status da solicitação atualizado com sucesso.',
+  })
+UpdateStatus(
+    @Param('id') id: string,
+    @Body('status') status: StatusRequest,
+  ) {
+    return this.serviceRequestService.updateStatus(id, status);
+  }
+
   @Get('user/:userId')
   @ApiOperation({ summary: 'Lista todas as solicitações de serviço de um usuário específico.' })  
   @ApiOkResponse({ type: PaginatedDto, description: 'Lista de solicitações do usuário paginada.' })
