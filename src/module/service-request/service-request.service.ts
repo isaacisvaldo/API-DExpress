@@ -480,11 +480,13 @@ export class ServiceRequestService {
       location,
       ...contractData
     } = createContractDto;
+    console.log(createContractDto);
+    
     // Validação de consistência de dados
     if (contractData.clientType === UserType.INDIVIDUAL) {
       if (!professionalId) {
         throw new BadRequestException(
-          'Para clientes individuais, `individualClientId` e `professionalId` são obrigatórios.'
+          'Para clientes individuais,  e `professionalId` é obrigatórios.'
         );
       }
     } else if (contractData.clientType === UserType.CORPORATE) {
@@ -533,8 +535,8 @@ export class ServiceRequestService {
 
         const user = await this.prisma.user.create({
           data: {
-            firstName: contractData.fullName,
-            lastName: contractData.fullName,
+            firstName: contractData.firstName,
+            lastName: contractData.lastName,
             email: contractData.email,
             password: hashedPassword,
             type: contractData.clientType,
@@ -543,7 +545,7 @@ export class ServiceRequestService {
         if (user) {
           const profile = await this.prisma.clientProfile.create({
             data: {
-              fullName: contractData.fullName,
+              fullName: `${contractData.firstName} ${contractData.lastName}`,
               identityNumber: contractData.identityNumber,
               email: contractData.email,
               phoneNumber: contractData.phone,
@@ -559,22 +561,21 @@ export class ServiceRequestService {
 
       } else {
 
-  const company = await this.prisma.clientCompanyProfile.create({
-      data: {
-       
- companyName  :   contractData.companyName,
-  nif        :contractData.nif ||"0000000000",
-  email         :contractData.email,
-  phoneNumber         :contractData.phone,
+        const company = await this.prisma.clientCompanyProfile.create({
+          data: {
+            companyName: contractData.companyName,
+            nif: contractData.nif || "0000000",
+            email: contractData.email,
+            phoneNumber: contractData.phone,
+            address: location.street,
+            districtId: location.districtId,
+            sectorId: contractData.sectorId,
 
-  address         :location.street,
 
-     districtId      :location.districtId,
 
-      sectorId     :   contractData.sectorId
-      },
-    });
-   clientId= company.id;
+          },
+        });
+        clientId = company.id;
       }
 
 

@@ -30,7 +30,10 @@ export class CreateContractInRequestDto {
 
   @IsString()
     @IsOptional()
-  fullName: string;
+  firstName: string;
+    @IsString()
+    @IsOptional()
+  lastName: string;
 
   @IsString()
   identityNumber: string;
