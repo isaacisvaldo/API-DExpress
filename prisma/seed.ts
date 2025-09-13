@@ -8,7 +8,7 @@ import { courseData } from './seeds/Course.seed';
 import { languageData } from './seeds/Language.seed';
 import { skillData } from './seeds/Skill.seed';
 import { sectorNames } from './seeds/Sector.seed';
-import { generalAvailabilityData } from './seeds/general-availability.seed';
+
 import { experienceLevelData } from './seeds/experincial-level.seed';
 import { internalPermissions } from './seeds/permission.seed';
 
@@ -177,17 +177,7 @@ async function main() {
   }
   console.log('✅ Habilidades criados com sucesso!');
 
-  // --- SEED: DISPONIBILIDADE GERAL ---
-  const availabilityMap: Record<string, string> = {};
-  for (const data of generalAvailabilityData) {
-    const availability = await prisma.generalAvailability.upsert({
-      where: { name: data.name },
-      update: {},
-      create: data,
-    });
-    availabilityMap[data.name] = availability.id;
-  }
-  console.log('✅ Tipos de disponibilidade geral criados com sucesso!');
+
 
   // --- SEED: NÍVEIS DE EXPERIÊNCIA ---
   const experienceLevelMap: Record<string, string> = {};
@@ -272,6 +262,7 @@ if (!existingAdmin) {
       genderId: genderMap['MALE'],
       birthDate: new Date('1990-01-01'),
       email: defaultEmail,
+      avatar:"user.png",
       password: hashedPassword,
       isRoot:true,
       profileId: generalAdminProfile.id, 

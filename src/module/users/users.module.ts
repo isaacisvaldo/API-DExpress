@@ -6,10 +6,12 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { UserController } from './users.controller';
 import { UserService } from './users.service';
 
+import { JwtService } from '@nestjs/jwt';
+
 @Module({
   imports: [PrismaModule, MailerModule],
   controllers: [UserController],
-  providers: [UserService], 
+  providers: [UserService,JwtService], 
   
 })
 export class UsersModule {}

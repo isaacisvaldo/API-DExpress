@@ -6,18 +6,44 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
-import { UpdateServiceRequestDto } from './dto/update-service-request.dto'; // Precisará criar este DTO
-import { FindAllDto } from 'src/common/pagination/find-all.dto';
+import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
-import { ServiceRequest, Prisma, UserType } from '@prisma/client';
+import { ServiceRequest, Prisma, UserType, StatusRequest } from '@prisma/client';
 import { MailerService } from '@nestjs-modules/mailer';
-import { testDomains } from 'src/util/test-domain';
-import * as dns from 'dns';
+
 import { FilterServiceRequestsDto } from './dto/filter-service-requests.dto';
+import { CreateContractInRequestDto } from './dto/create-contract-inRequestService';
+import { ContractNumberHelper } from 'src/helpers/contract-number.helper';
+import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
+
+
+const contractInclude = {
+  professional: true,
+  individualClient: true,
+  companyClient: true,
+  package: true,
+  desiredPosition: true,
+  location: {
+    include: {
+      city: true,
+      district: true,
+    },
+  },
+  contractPackegeProfissional: {
+    include: {
+      professional: true,
+    },
+  },
+};
+
+
 @Injectable()
 export class ServiceRequestService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly contractNumberHelper: ContractNumberHelper,
+
     private readonly mailerService: MailerService,
   ) { }
 
@@ -44,54 +70,10 @@ export class ServiceRequestService {
       companyDistrictId,
       companySectorId,
       description,
-     serviceFrequency,
+      serviceFrequency,
       planId,
       professionalId,
     } = createServiceRequestDto;
-
-    // 1. Verificação básica de e-mail
-    if (!requesterEmail) {
-      throw new BadRequestException('O e-mail do solicitante é obrigatório.');
-    }
-    const domain = requesterEmail.split('@')[1];
-
-    // 1. Verificação se o e-mail é de teste (nova verificação)
-    if (testDomains.includes(domain)) {
-      throw new BadRequestException('E-mails de teste não são permitidos.');
-    }
-
-
-
-    // 1. Validação do formato do e-mail
-    const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requesterEmail);
-    if (!isValidFormat) {
-      throw new BadRequestException('Formato de e-mail inválido.');
-    }
-
-    // 2. Verificação do domínio (registros MX)
-
-    try {
-      const mxRecords = await new Promise<dns.MxRecord[]>((resolve, reject) => {
-        dns.resolveMx(domain, (err, addresses) => {
-          if (err) {
-            // Se houver erro, rejeita a Promise
-            return reject(err);
-          }
-          // Se der certo, resolve a Promise com o array de registros
-          resolve(addresses);
-        });
-      });
-
-      // Agora mxRecords é garantido ser um array,
-      // então a verificação do length funciona
-      if (mxRecords.length === 0) {
-        throw new BadRequestException('O domínio do e-mail não é válido.');
-      }
-    } catch (error) {
-      // Este bloco de catch vai capturar erros como ENODATA, ENOTFOUND, etc.
-      // que significam que o domínio não tem registros MX ou não existe.
-      throw new BadRequestException('O domínio do e-mail não é válido.');
-    }
 
 
     // 2. Prepara os dados de acordo com o tipo de requerente
@@ -101,10 +83,17 @@ export class ServiceRequestService {
       requesterPhoneNumber,
       description,
       serviceFrequency
-      
+
     };
 
     if (requesterType === UserType.INDIVIDUAL) {
+      const verifyRequeser = await this.prisma.serviceRequest.findFirst({
+        where: {
+          individualUserId: individualUserId,
+          status: "PENDING"
+        }
+      })
+      if (verifyRequeser) throw new BadRequestException("Já existe uma solicitação pendente para este usuário")
       const user = await this.prisma.user.findUnique({
         where: {
           id: individualUserId
@@ -126,24 +115,33 @@ export class ServiceRequestService {
         professionalId,
       });
     } else if (requesterType === UserType.CORPORATE) {
+      const verifyRequeser = await this.prisma.serviceRequest.findFirst({
+        where: {
+          companyNif: companyNif,
+          status: "PENDING"
+        }
+      })
+      if (verifyRequeser) throw new BadRequestException("Já existe uma solicitação pendente para esta empresa")
       const District = await this.prisma.district.findUnique({
         where: {
           id: companyDistrictId
         }
       })
+      if (!District) throw new NotFoundException("Distrito Não encontrado")
       const Sector = await this.prisma.sector.findUnique({
         where: {
           id: companySectorId
         }
       })
+      if (!Sector) throw new NotFoundException("Sector Não encontrado")
       const plan = await this.prisma.package.findUnique({
         where: {
           id: planId
         }
       })
-      if (!District) throw new ForbiddenException("Distrito Não encontrado")
-      if (!Sector) throw new ForbiddenException("Sector Não encontrado")
-      if (!plan) throw new ForbiddenException("Plano Não Identificado")
+
+
+      if (!plan) throw new NotFoundException("Plano Não Identificado")
       Object.assign(requestData, {
         companyRequesterName,
         companyNif,
@@ -178,62 +176,62 @@ export class ServiceRequestService {
    */
 
 
-async findAll(query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequest>> {
-  const page = query.page || 1;
-  const limit = query.limit || 10;
-  const skip = (page - 1) * limit;
+  async findAll(query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequest>> {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const skip = (page - 1) * limit;
 
-  // Combine todas as condições de filtro
-  const filtersWhere: Prisma.ServiceRequestWhereInput = {
-    // Filtro de busca (search)
-    ...(query.search && {
-      OR: [
-        { requesterEmail: { contains: query.search, mode: 'insensitive' } },
-        { description: { contains: query.search, mode: 'insensitive' } },
-        { individualRequesterName: { contains: query.search, mode: 'insensitive' } },
-        { companyRequesterName: { contains: query.search, mode: 'insensitive' } },
-      ],
-    }),
+    // Combine todas as condições de filtro
+    const filtersWhere: Prisma.ServiceRequestWhereInput = {
+      // Filtro de busca (search)
+      ...(query.search && {
+        OR: [
+          { requesterEmail: { contains: query.search, mode: 'insensitive' } },
+          { description: { contains: query.search, mode: 'insensitive' } },
+          { individualRequesterName: { contains: query.search, mode: 'insensitive' } },
+          { companyRequesterName: { contains: query.search, mode: 'insensitive' } },
+        ],
+      }),
 
-    // Filtro por tipo de solicitante (requesterType)
-    ...(query.requesterType && {
-      requesterType: query.requesterType,
-    }),
+      // Filtro por tipo de solicitante (requesterType)
+      ...(query.requesterType && {
+        requesterType: query.requesterType,
+      }),
 
-    // Filtro por status
-    ...(query.status && {
-      status: query.status,
-    }),
+      // Filtro por status
+      ...(query.status && {
+        status: query.status,
+      }),
 
-    // Filtro por descrição (se necessário)
-    ...(query.description && {
-      description: { contains: query.description, mode: 'insensitive' },
-    }),
-  };
+      // Filtro por descrição (se necessário)
+      ...(query.description && {
+        description: { contains: query.description, mode: 'insensitive' },
+      }),
+    };
 
-  const [requests, total] = await this.prisma.$transaction([
-    this.prisma.serviceRequest.findMany({
-      skip,
-      take: limit,
-      where: filtersWhere,
-      include: {
-        individualClient: true,
-        companyClient: true,
-      },
-    }),
-    this.prisma.serviceRequest.count({ where: filtersWhere }),
-  ]);
+    const [requests, total] = await this.prisma.$transaction([
+      this.prisma.serviceRequest.findMany({
+        skip,
+        take: limit,
+        where: filtersWhere,
+        include: {
+          individualClient: true,
+          companyClient: true,
+        },
+      }),
+      this.prisma.serviceRequest.count({ where: filtersWhere }),
+    ]);
 
-  const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / limit);
 
-  return {
-    data: requests,
-    total,
-    page,
-    limit,
-    totalPages,
-  };
-}
+    return {
+      data: requests,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+  }
 
   /**
    * Busca uma única solicitação de serviço pelo seu ID.
@@ -245,8 +243,9 @@ async findAll(query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequ
     const request = await this.prisma.serviceRequest.findUnique({
       where: { id },
       include: {
-        individualClient: true,
-        companyClient: true,
+        package: true,
+        professional: true,
+
       },
     });
 
@@ -296,6 +295,390 @@ async findAll(query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequ
       throw error;
     }
   }
+  async findServiceRequestByUserId(userId: string, query): Promise<PaginatedDto<any>> {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const skip = (page - 1) * limit;
+
+    // Combine todas as condições de filtro
+    const filtersWhere: Prisma.ServiceRequestWhereInput = {
+      individualUserId: userId,
+      // Filtro de busca (search)
+      ...(query.search && {
+        OR: [
+          { requesterEmail: { contains: query.search, mode: 'insensitive' } },
+          { description: { contains: query.search, mode: 'insensitive' } },
+          { individualRequesterName: { contains: query.search, mode: 'insensitive' } },
+
+        ],
+      }),
+
+      // Filtro por tipo de solicitante (requesterType)
+      ...(query.requesterType && {
+        requesterType: query.requesterType,
+      }),
+
+      // Filtro por status
+      ...(query.status && {
+        status: query.status,
+      }),
+
+      // Filtro por descrição (se necessário)
+      ...(query.description && {
+        description: { contains: query.description, mode: 'insensitive' },
+      }),
+    };
+
+    const [requests, total] = await this.prisma.$transaction([
+      this.prisma.serviceRequest.findMany({
+        skip,
+        take: limit,
+        where: filtersWhere,
+        select: {
+
+          id: true,
+          status: true,
+          serviceFrequency: true,
+          description: true,
+          createdAt: true,
+
+          professional: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phoneNumber: true,
+              identityNumber: true,
+              isAvailable: true,
+              description: true,
+              expectedAvailability: true,
+              hasCriminalRecord: true,
+              hasMedicalCertificate: true,
+              hasTrainingCertificate: true,
+              location: {
+                select: {
+                  id: true,
+                  street: true,
+                  city: {
+                    select: {
+                      name: true
+                    }
+                  },
+                  district: {
+                    select: {
+                      name: true
+                    }
+
+                  }
+                }
+
+              },
+              profileImage: true,
+              gender: true,
+              birthDate: true,
+              hasChildren: true,
+              knownDiseases: true,
+              createdAt: true,
+              experienceLevel: true,
+              maritalStatus: true,
+              highestDegree: true,
+
+
+            },
+          },
+        },
+      }),
+      this.prisma.serviceRequest.count({ where: filtersWhere }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: requests,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+
+  }
+  async findServiceRequestByCompanyNif(companyNif: string, query): Promise<PaginatedDto<ServiceRequest>> {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const skip = (page - 1) * limit;
+
+    // Combine todas as condições de filtro
+    const filtersWhere: Prisma.ServiceRequestWhereInput = {
+      companyNif: companyNif,
+      // Filtro de busca (search)
+      ...(query.search && {
+        OR: [
+          { requesterEmail: { contains: query.search, mode: 'insensitive' } },
+          { description: { contains: query.search, mode: 'insensitive' } },
+
+          { companyRequesterName: { contains: query.search, mode: 'insensitive' } },
+        ],
+      }),
+
+      // Filtro por tipo de solicitante (requesterType)
+      ...(query.requesterType && {
+        requesterType: query.requesterType,
+      }),
+
+      // Filtro por status
+      ...(query.status && {
+        status: query.status,
+      }),
+
+      // Filtro por descrição (se necessário)
+      ...(query.description && {
+        description: { contains: query.description, mode: 'insensitive' },
+      }),
+    };
+
+    const [requests, total] = await this.prisma.$transaction([
+      this.prisma.serviceRequest.findMany({
+        skip,
+        take: limit,
+        where: filtersWhere,
+
+        include: {
+
+          package: true
+        },
+      }),
+      this.prisma.serviceRequest.count({ where: filtersWhere }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: requests,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+
+  }
+  async updateStatus(id: string, status: StatusRequest) {
+    return await this.prisma.serviceRequest.update({
+      where: { id },
+      data: { status },
+    });
+
+  }
+
+  async createContractInRequest(id: string, createContractDto: CreateContractInRequestDto) {
+    const {
+      professionalId,
+      professionalIds,
+      individualClientId,
+      companyClientId,
+      packageId,
+      desiredPositionId,
+      location,
+      ...contractData
+    } = createContractDto;
+    console.log(createContractDto);
+    
+    // Validação de consistência de dados
+    if (contractData.clientType === UserType.INDIVIDUAL) {
+      if (!professionalId) {
+        throw new BadRequestException(
+          'Para clientes individuais,  e `professionalId` é obrigatórios.'
+        );
+      }
+    } else if (contractData.clientType === UserType.CORPORATE) {
+      if (!professionalIds || professionalIds.length === 0) {
+        throw new BadRequestException(
+          'Para clientes empresariais, `companyClientId` e `professionalIds` são obrigatórios.'
+        );
+      }
+    }
+
+    let clientId: string | null = null;
+
+
+
+
+    return this.prisma.$transaction(async (prisma) => {
+      // 1. Valida se os profissionais existem
+      if (professionalIds && professionalIds.length > 0) {
+        const existingProfessionals = await prisma.professional.findMany({
+          where: { id: { in: professionalIds } },
+          select: { id: true },
+        });
+
+        if (existingProfessionals.length !== professionalIds.length) {
+          const foundIds = existingProfessionals.map((p) => p.id);
+          const notFoundIds = professionalIds.filter((id) => !foundIds.includes(id));
+          throw new NotFoundException(
+            `Os seguintes IDs de profissionais não foram encontrados: ${notFoundIds.join(', ')}`
+          );
+        }
+      }
+
+      // 2. Criação da Localização
+      const endereco = await prisma.location.create({
+        data: {
+          cityId: location.cityId,
+          districtId: location.districtId,
+          street: location.street,
+        },
+      });
+
+      if (contractData.clientType === UserType.INDIVIDUAL) {
+
+        const tempPassword = randomBytes(4).toString('hex');
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+        const user = await this.prisma.user.create({
+          data: {
+            firstName: contractData.firstName,
+            lastName: contractData.lastName,
+            email: contractData.email,
+            password: hashedPassword,
+            type: contractData.clientType,
+          },
+        });
+        if (user) {
+          const profile = await this.prisma.clientProfile.create({
+            data: {
+              fullName: `${contractData.firstName} ${contractData.lastName}`,
+              identityNumber: contractData.identityNumber,
+              email: contractData.email,
+              phoneNumber: contractData.phone,
+              address: "",
+              userId: user.id,
+
+
+            },
+
+          });
+          clientId = profile.id;
+        }
+
+      } else {
+
+        const company = await this.prisma.clientCompanyProfile.create({
+          data: {
+            companyName: contractData.companyName,
+            nif: contractData.nif || "0000000",
+            email: contractData.email,
+            phoneNumber: contractData.phone,
+            address: location.street,
+            districtId: location.districtId,
+            sectorId: contractData.sectorId,
+
+
+
+          },
+        });
+        clientId = company.id;
+      }
+
+
+      // 3. Montagem do contrato base
+      const contractNumber = await this.contractNumberHelper.generate();
+
+      let contractDataToSave: any = {
+        contractNumber,
+        title: contractData.title ?? "Contract Title",
+        clientType: contractData.clientType,
+        packageId: packageId ?? null,
+        desiredPositionId: desiredPositionId ?? null,
+        description: contractData.description ?? "",
+        serviceFrequency: "ANNUALLY",
+        agreedValue: contractData.agreedValue ?? 0.0,
+        discountPercentage: contractData.discountPercentage ?? 0.0,
+        finalValue: contractData.finalValue ?? 0.0,
+        paymentTerms: contractData.paymentTerms ?? "Teste",
+        startDate: contractData.startDate ? new Date(contractData.startDate) : new Date(),
+        endDate: contractData.endDate ? new Date(contractData.endDate) : null,
+        status: "ACTIVE",
+        locationId: endereco.id,
+        notes: contractData.notes ?? null,
+      };
+
+      // 4. Diferenciação por tipo de cliente
+      if (contractData.clientType === UserType.INDIVIDUAL) {
+        contractDataToSave = {
+          ...contractDataToSave,
+          packageId: null,
+          professionalId,
+          individualClientId: clientId,
+          companyClientId: null,
+        };
+      } else if (contractData.clientType === UserType.CORPORATE) {
+        contractDataToSave = {
+          ...contractDataToSave,
+          professionalId: null,
+          desiredPositionId: null,
+          individualClientId: null,
+          companyClientId: clientId,
+        };
+      }
+
+      // 5. Criação do contrato
+      const newContract = await prisma.contract.create({
+        data: contractDataToSave,
+      });
+
+      // 6. Criação da tabela de junção PARA CLIENTES CORPORATIVOS
+      if (contractData.clientType === UserType.CORPORATE && professionalIds && professionalIds.length > 0) {
+        const contractPackageProfessionalData = professionalIds.map((id) => ({
+          professionalId: id,
+          contractId: newContract.id,
+        }));
+
+        await prisma.contractPackegeProfissional.createMany({
+          data: contractPackageProfessionalData,
+        });
+      }
+      await this.marcarProfissionaisIndisponiveis(
+        prisma,
+        contractData.clientType,
+        professionalId,
+        professionalIds,
+      );
+
+      const createdContract = await prisma.contract.findUnique({
+        where: { id: newContract.id },
+        include: contractInclude,
+      });
+
+      return createdContract!;
+    }, {
+      timeout: 30000,
+    });
+
+    console.log("DADOS::::", createContractDto);
+
+
+    //  
+  }
+  async marcarProfissionaisIndisponiveis(
+    prisma: Prisma.TransactionClient,
+    clientType: UserType,
+    professionalId?: string,
+    professionalIds?: string[],
+  ) {
+    if (clientType === UserType.INDIVIDUAL && professionalId) {
+      await prisma.professional.update({
+        where: { id: professionalId },
+        data: { isAvailable: false },
+      });
+    }
+
+    if (clientType === UserType.CORPORATE && professionalIds && professionalIds.length > 0) {
+      await prisma.professional.updateMany({
+        where: { id: { in: professionalIds } },
+        data: { isAvailable: false },
+      });
+    }
+  }
+
 
   /**
    * Envia um e-mail de confirmação de recebimento da solicitação.
@@ -332,4 +715,5 @@ async findAll(query: FilterServiceRequestsDto): Promise<PaginatedDto<ServiceRequ
       html: htmlContent,
     });
   }
+
 }

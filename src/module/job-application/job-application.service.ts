@@ -3,50 +3,13 @@ import { CreateJobApplicationDto } from './dto/create-job-application.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { UpdateJobApplicationStatusDto } from './dto/update-status.dto';
 import { FilterJobApplicationDto } from './dto/filter-job-application.dto';
-import { testDomains } from 'src/util/test-domain';
-import * as dns from 'dns';
+
 
 @Injectable()
 export class JobApplicationService {
   constructor(private readonly prisma: PrismaService) {}
 
  async create(createDto: CreateJobApplicationDto) {
-
-      const domain = createDto.email.split('@')[1];
-      
-        // 1. Verificação se o e-mail é de teste (nova verificação)
-        if (testDomains.includes(domain)) {
-          throw new BadRequestException('E-mails de teste não são permitidos.');
-        }
-        // 1. Validação do formato do e-mail
-        const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createDto.email);
-        if (!isValidFormat) {
-          throw new BadRequestException('Formato de e-mail inválido.');
-        }
-        // 2. Verificação do domínio (registros MX)
-      
-        try {
-          const mxRecords = await new Promise<dns.MxRecord[]>((resolve, reject) => {
-            dns.resolveMx(domain, (err, addresses) => {
-              if (err) {
-                // Se houver erro, rejeita a Promise
-                return reject(err);
-              }
-              // Se der certo, resolve a Promise com o array de registros
-              resolve(addresses);
-            });
-          });
-      
-          // Agora mxRecords é garantido ser um array,
-          // então a verificação do length funciona
-          if (mxRecords.length === 0) {
-            throw new BadRequestException('O domínio do e-mail não é válido.');
-          }
-        } catch (error) {
-         
-          throw new BadRequestException('O domínio do e-mail não é válido.');
-        }
-        
 
       
     // 2. Verificação da existência de TODOS os IDs relacionados
@@ -57,14 +20,14 @@ export class JobApplicationService {
       highestDegree,
       maritalStatus,
       experienceLevel,
-      generalAvailability,
+      ,
     ] = await this.prisma.$transaction([
       this.prisma.gender.findUnique({ where: { id: createDto.genderId } }),
       this.prisma.desiredPosition.findUnique({ where: { id: createDto.desiredPositionId } }),
       this.prisma.highestDegree.findUnique({ where: { id: createDto.highestDegreeId } }),
       this.prisma.maritalStatus.findUnique({ where: { id: createDto.maritalStatusId } }),
       this.prisma.experienceLevel.findUnique({ where: { id: createDto.experienceLevelId } }),
-      this.prisma.generalAvailability.findUnique({ where: { id: createDto.generalAvailabilityId } }),
+  
     ]);
 
     if (!gender) throw new NotFoundException(`Gender with ID "${createDto.genderId}" not found.`);
@@ -72,8 +35,7 @@ export class JobApplicationService {
     if (!highestDegree) throw new NotFoundException(`Highest Degree with ID "${createDto.highestDegreeId}" not found.`);
     if (!maritalStatus) throw new NotFoundException(`Marital Status with ID "${createDto.maritalStatusId}" not found.`);
     if (!experienceLevel) throw new NotFoundException(`Experience Level with ID "${createDto.experienceLevelId}" not found.`);
-    if (!generalAvailability) throw new NotFoundException(`General Availability with ID "${createDto.generalAvailabilityId}" not found.`);
-
+ 
     // (Relacionamentos muitos-para-muitos - arrays de IDs)
     const [courses, languages, skills] = await this.prisma.$transaction([
       this.prisma.course.findMany({ where: { id: { in: createDto.courses } } }),
@@ -135,7 +97,7 @@ export class JobApplicationService {
         highestDegreeId: createDto.highestDegreeId,
         maritalStatusId: createDto.maritalStatusId,
         experienceLevelId: createDto.experienceLevelId,
-        generalAvailabilityId: createDto.generalAvailabilityId,
+      
 
         // Conecta os relacionamentos muitos-para-muitos (arrays de IDs)
         languages: {
@@ -165,7 +127,7 @@ export class JobApplicationService {
         highestDegree: true,
         maritalStatus: true,
         experienceLevel: true,
-        generalAvailability: true,
+     
         languages: true,
         skills: true,
         courses: true,
@@ -239,7 +201,7 @@ export class JobApplicationService {
           highestDegree: true,
           maritalStatus: true,
           experienceLevel: true,
-          generalAvailability: true,
+         
           languages: true,
           skills: true,
           courses: true,
@@ -278,7 +240,7 @@ export class JobApplicationService {
         highestDegree: true,
         maritalStatus: true,
         experienceLevel: true,
-        generalAvailability: true,
+       
         languages: true,
         skills: true,
         courses: true,
@@ -312,7 +274,7 @@ async updateStatus(id: string, dto: UpdateJobApplicationStatusDto) {
         highestDegree: true,
         maritalStatus: true,
         experienceLevel: true,
-        generalAvailability: true,
+      
         languages: true,
         skills: true,
         courses: true,

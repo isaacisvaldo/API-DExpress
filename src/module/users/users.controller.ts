@@ -8,6 +8,9 @@ import {
   Delete,
   Query,
   Req,
+  UseGuards,
+  UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 
 import { CreateUserDto } from './dto/create-user.dto';
@@ -18,6 +21,7 @@ import { FindAllDto } from 'src/common/pagination/find-all.dto';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { UserService } from './users.service';
 import { User } from '@prisma/client';
+import { JwtAuthGuard } from 'src/common';
 
 @ApiTags('Users')
 @Controller('users')
@@ -32,7 +36,7 @@ export class UserController {
   })
   @ApiResponse({ status: 400, description: 'E-mail já cadastrado.' })
   create(@Body() createUserDto: CreateUserDto, @Req() req: any) {
-    const originDomain = req.headers['origin'];
+    const originDomain = req.headers['origin'] || req.headers['referer'] || req.headers['host'];
     return this.userService.create(createUserDto, originDomain);
   }
 
@@ -42,11 +46,33 @@ export class UserController {
   findAll(@Query() query: FindAllDto): Promise<PaginatedDto<User>> {
     return this.userService.findAll(query);
   }
-   @Get('without-profile')
+  @Get('without-profile')
   @ApiOperation({ summary: 'Lista todos os usuários que não têm nenhum perfil associado, com paginação e pesquisa.' })
   @ApiOkResponse({ type: PaginatedDto, description: 'Lista de usuários sem perfil paginada.' })
-  findWithoutProfile(@Query() query: FindAllDto): Promise<PaginatedDto<User>> { 
+  findWithoutProfile(@Query() query: FindAllDto): Promise<PaginatedDto<User>> {
     return this.userService.findUsersWithoutProfile(query);
+  }
+  @Get('curent')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Obtém os detalhes do usuário autenticado.' })
+  @ApiOkResponse({ description: 'Detalhes do usuário autenticado.' })
+  getCurrentUser(@Req() req: any) {
+    const user = req.user;
+   
+    
+    if (!user) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+    const Id = user.sub || user.id;
+    if (!Id) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+/*
+    if (!user.isActive) {
+      throw new ForbiddenException('Usuário inativo');
+    }
+*/
+    return this.userService.findOne(Id);
   }
 
   @Get(':id')
@@ -81,6 +107,7 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
   }
+
 
 }
 

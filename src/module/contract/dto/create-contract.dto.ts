@@ -10,8 +10,11 @@ import {
   IsArray,
   ArrayNotEmpty,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 import { ServiceFrequency, UserType } from '@prisma/client';
+import { CreateLocationDto } from 'src/module/shared/location/dto/create-location.dto';
+import { Type } from 'class-transformer';
 
 /**
  * DTO para criar um novo contrato.
@@ -90,6 +93,7 @@ export class CreateContractDto {
   })
   @IsOptional()
   @IsUUID()
+    @ValidateIf((o) => o.clientType === UserType.CORPORATE)
   packageId?: string;
 
   @ApiPropertyOptional({
@@ -109,13 +113,10 @@ export class CreateContractDto {
   description: string;
 
 
-  @ApiProperty({
-    description: 'O ID da localização do serviço.',
-    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-  })
-  @IsNotEmpty()
-  @IsUUID()
-  locationId: string;
+  @ApiProperty({ type: () => CreateLocationDto })
+  @ValidateNested()
+  @Type(() => CreateLocationDto)
+  location: CreateLocationDto;
 
   @ApiProperty({
     description: 'O valor acordado para o contrato.',
@@ -155,16 +156,16 @@ export class CreateContractDto {
     example: '2023-10-27T00:00:00.000Z',
   })
   @IsNotEmpty()
-  @IsDate()
-  startDate: Date;
+  @IsString()
+  startDate: string;
 
   @ApiPropertyOptional({
     description: 'A data de término do contrato (opcional).',
     example: '2024-10-27T00:00:00.000Z',
   })
   @IsOptional()
-  @IsDate()
-  endDate?: Date;
+  @IsString()
+  endDate?: string;
 
   @ApiPropertyOptional({
     description: 'Notas adicionais sobre o contrato.',

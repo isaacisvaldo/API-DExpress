@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { IsValidEmail } from 'src/common/validators/is-valid-email';
 
 export class CreateProfessionalDto {
   @ApiProperty({ example: 'Maria Joaquina', description: 'Nome completo do profissional' })
@@ -19,6 +20,7 @@ export class CreateProfessionalDto {
 
   @ApiProperty({ example: 'maria@example.com', description: 'Email do profissional' })
   @IsEmail()
+   @IsValidEmail() 
   email: string;
 
   @ApiProperty({ example: '+244912345678', description: 'Telefone do profissional' })
@@ -30,9 +32,7 @@ export class CreateProfessionalDto {
   @IsString()
   identityNumber?: string;
 
-  @ApiProperty({ example: 'uuid-do-tipo-disponibilidade', description: 'ID do tipo de disponibilidade' })
-  @IsUUID()
-  availabilityTypeId: string;
+
 
   @ApiProperty({ example: 'uuid-do-nivel-experiencia', description: 'ID do nível de experiência' })
   @IsUUID()
@@ -86,10 +86,10 @@ export class CreateProfessionalDto {
   @IsBoolean()
   hasChildren: boolean;
 
-  @ApiProperty({ example: 'Asma', required: false })
-  @IsOptional()
-  @IsString()
-  knownDiseases?: string;
+ @ApiProperty({ example: false, required: false })
+@IsOptional()
+@IsBoolean()
+knownDiseases?: boolean;
 
   @ApiProperty({ example: '76c1e5b4-2f33-4b90-8f83-874cbd02d9e5', description: 'ID do cargo/posição desejada' })
   @IsUUID()

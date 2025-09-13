@@ -17,6 +17,8 @@ import { Throttle } from '@nestjs/throttler';
 
 const isProduction = process.env.COOKIES === 'production';
 
+console.log("SECURE::::PROD",isProduction)
+
 @ApiTags('Admin Auth')
 @Controller('admin/auth')
 export class AdminAuthController {

@@ -57,6 +57,25 @@ export class ClientCompanyProfileService {
       totalPages,
     };
   }
+  async findAllWithoutPagination(search?: string): Promise<ClientCompanyProfile[]> {
+    const where: Prisma.ClientCompanyProfileWhereInput = search
+      ? {
+        OR: [
+          { companyName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { nif: { contains: search, mode: 'insensitive' } },
+        ],
+      }
+      : {};
+
+    return this.prisma.clientCompanyProfile.findMany({
+      where,
+      include: {
+
+        sector: true,
+      },
+    });
+  }
 
   /**
    * Cria um novo perfil de empresa para um usuário.

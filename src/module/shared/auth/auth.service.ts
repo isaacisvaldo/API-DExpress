@@ -17,11 +17,11 @@ export class AuthService {
     return user;
   }
   async login(user: any) {
-    const payload = { sub: user.id, email: user.email, type: user.type };
+    const payload = { id: user.id, email: user.email, type: user.type ,isActive:user.isActive};
 
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
-      expiresIn: process.env.JWT_EXPIRES_IN,
+      expiresIn:process.env.JWT_EXPIRES_IN,
     });
 
     const refreshToken = this.jwtService.sign(payload, {
@@ -45,15 +45,16 @@ export class AuthService {
       const decoded = this.jwtService.verify(refreshToken, {
         secret: process.env.JWT_REFRESH_SECRET,
       });
-
+    
+      const id = decoded.sub || decoded.id;
       const user = await this.prisma.user.findUnique({
-        where: { id: decoded.sub },
+        where: {id},
       });
 
       if (!user) throw new UnauthorizedException('Usuário não encontrado');
 
       const payload = {
-        sub: user.id,
+        id: user.id,
         email: user.email,
         type: user.type,
       };
@@ -68,4 +69,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
   }
+
+
+
 }

@@ -1,12 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsEmail,
   IsNotEmpty,
   IsString,
   IsEnum,
-
 } from 'class-validator';
 import { UserType } from '@prisma/client';
+import { IsValidEmail } from 'src/common/validators/is-valid-email';
 
 export class CreateUserDto {
   @ApiProperty({
@@ -30,7 +29,7 @@ export class CreateUserDto {
     example: 'joao.silva@example.com',
   })
   @IsNotEmpty({ message: 'O e-mail é obrigatório.' })
-  @IsEmail({}, { message: 'Formato de e-mail inválido.' })
+  @IsValidEmail() 
   email: string;
 
   @ApiProperty({
@@ -41,6 +40,4 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'O tipo de usuário é obrigatório.' })
   @IsEnum(UserType, { message: 'Tipo de usuário inválido.' })
   type: UserType;
-
-
 }

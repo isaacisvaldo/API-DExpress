@@ -5,13 +5,19 @@ import {
   Res,
   Req,
   UnauthorizedException,
+  UseGuards,
+  Get,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
 import { Response, Request } from 'express';
+import { JwtAuthGuard } from 'src/common';
 
 const isProduction = process.env.COOKIES === 'production';
+
+
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -29,19 +35,20 @@ export class AuthController {
 
     res.cookie('access_token', accessToken, {
       httpOnly: true,
-      secure: isProduction, 
-      sameSite: isProduction ? 'none' : 'lax', 
+       secure: isProduction ? true : false,
+     
+      partitioned:isProduction ? true : false,
+      sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict', 
      maxAge: 5 * 60 * 60 * 1000,
     });
-
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+       secure: isProduction ? true : false,
+      partitioned:isProduction ? true : false,
+      sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, 
     });
-
-    return { user: userData };
+    return { user: userData,accessToken, refreshToken };
   }
 
   @Post('refresh')
@@ -50,6 +57,8 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const refreshToken = req.cookies?.refresh_token;
+
+  
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token não fornecido');
     }
@@ -60,26 +69,37 @@ export class AuthController {
 
     res.cookie('access_token', accessToken, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 60 * 60 * 1000, // 1 hora
+       secure: isProduction ? true : false,
+      partitioned:isProduction ? true : false,
+      sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict',
+      maxAge: 60 * 60 * 1000, 
     });
+   
+    
 
-    return { success: true };
+    return { success: true,accessToken};
   }
 
   @Post('logout')
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('access_token', {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+       secure: isProduction ? true : false,
+      partitioned:isProduction ? true : false,
+      sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict',
     });
     res.clearCookie('refresh_token', {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+       secure: isProduction ? true : false,
+      partitioned:isProduction ? true : false,
+      sameSite:  (isProduction ? 'None' : 'Lax') as 'none' | 'lax' | 'strict',
     });
     return { message: 'Logout realizado com sucesso' };
   }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('validate')
+    async validate(@Req() req: any) {
+      return { valid: true, user: req.user };
+    }
 }

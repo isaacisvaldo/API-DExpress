@@ -9,6 +9,7 @@ import {
   IsEnum,
   ValidateIf,
 } from 'class-validator';
+import { IsValidEmail } from 'src/common/validators/is-valid-email';
 
 export class CreateServiceRequestDto {
   @ApiProperty({
@@ -25,6 +26,7 @@ export class CreateServiceRequestDto {
     example: 'solicitante@email.com',
   })
   @IsEmail()
+   @IsValidEmail() 
   @IsNotEmpty()
   requesterEmail: string;
 
@@ -129,8 +131,8 @@ export class CreateServiceRequestDto {
 
   @ApiProperty({
     enum: ServiceFrequency,
-    description: 'Frequência do serviço: Mensal, Bimestral, Trimestral, Semestral, Anual ou Bienal.',
-    example: ServiceFrequency.QUARTERLY,
+    description: 'Frequência do serviço: Diario, Semestral, Anual.',
+    example: ServiceFrequency.ANNUALLY,
   })
   @IsEnum(ServiceFrequency)
   @IsNotEmpty()
