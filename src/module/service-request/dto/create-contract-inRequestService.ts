@@ -12,7 +12,6 @@ class LocationDto {
   @IsString()
   street: string;
 }
-
 export class CreateContractInRequestDto {
   @IsString()
     @IsOptional()
@@ -35,7 +34,8 @@ export class CreateContractInRequestDto {
     @IsOptional()
   lastName: string;
 
-  @IsString()
+ @IsString()
+    @IsOptional()
   identityNumber: string;
 
   @IsString()

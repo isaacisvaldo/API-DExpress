@@ -243,6 +243,7 @@ export class ServiceRequestService {
     const request = await this.prisma.serviceRequest.findUnique({
       where: { id },
       include: {
+        companySector:true,
         package: true,
         professional: true,
 

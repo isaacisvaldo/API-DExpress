@@ -126,7 +126,7 @@ model Professional {
   contract                    Contract[]
   contractPackegeProfissional ContractPackegeProfissional[]
 
-  ServiceRequest ServiceRequest[]
+  serviceRequest ServiceRequest[]
 }
 
 model GeneralAvailability {
@@ -289,24 +289,31 @@ model Experience {
   jobApplication JobApplication[]
   Professional   Professional[]
 }
-model ContractDoc{
-    id   String @id @default(uuid())
-    contractId String
-    documentId String
-    document   Document @relation(fields: [documentId], references: [id])
-    contract Contract @relation(fields: [contractId], references: [id])
 
+model ContractDoc {
+  id         String   @id @default(uuid())
+  contractId String
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id])
+  contract   Contract @relation(fields: [contractId], references: [id])
+}
 
+model ContractModel {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  urlFile     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Document {
-  id   String @id @default(uuid())
-  name String 
-  description    String
-  url            String
-  createdAt      DateTime      @default(now()) // Data de criação
-  updatedAt      DateTime      @updatedAt // Data da última atualização
-
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  url         String
+  createdAt   DateTime @default(now()) // Data de criação
+  updatedAt   DateTime @updatedAt // Data da última atualização
 
   contractDoc ContractDoc[]
 }
@@ -369,6 +376,7 @@ model District {
   ClientCompanyProfile ClientCompanyProfile[]
 
   @@unique([name, cityId])
+  serviceRequest ServiceRequest[]
 }
 
 enum StatusRequest {
@@ -426,6 +434,9 @@ model ServiceRequest {
 
   companyClientId String? // ID da empresa, após registo
   companyClient   ClientCompanyProfile? @relation(fields: [companyClientId], references: [id])
+  companySector   Sector? @relation(fields: [companySectorId], references: [id])
+  companyDistrict District? @relation(fields: [companyDistrictId], references: [id])
+
 }
 
 model ClientProfile {
@@ -440,7 +451,7 @@ model ClientProfile {
   updatedAt        DateTime         @updatedAt
   user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId           String           @unique
-  ServiceRequest   ServiceRequest[]
+  serviceRequest   ServiceRequest[]
 
   contract Contract[]
 }
@@ -466,7 +477,7 @@ model ClientCompanyProfile {
   sectorId        String
   sector          Sector   @relation(fields: [sectorId], references: [id])
 
-  ServiceRequest ServiceRequest[]
+  serviceRequest ServiceRequest[]
 
   contract Contract[]
 }
@@ -512,44 +523,44 @@ enum ContractStatus {
 }
 
 model Contract {
-  id                 String                @id @default(uuid())
-  contractNumber     String                @unique @default(uuid())
-  title              String?
+  id                          String                        @id @default(uuid())
+  contractNumber              String                        @unique @default(uuid())
+  title                       String?
   // Relacionamento com as Partes
-  professional       Professional?         @relation(fields: [professionalId], references: [id])
-  professionalId     String? // Agora é OPCIONAL
-  clientType         UserType
-  individualClientId String?
-  companyClientId    String?
-  individualClient   ClientProfile?        @relation(fields: [individualClientId], references: [id])
-  companyClient      ClientCompanyProfile? @relation(fields: [companyClientId], references: [id])
+  professional                Professional?                 @relation(fields: [professionalId], references: [id])
+  professionalId              String? // Agora é OPCIONAL
+  clientType                  UserType
+  individualClientId          String?
+  companyClientId             String?
+  individualClient            ClientProfile?                @relation(fields: [individualClientId], references: [id])
+  companyClient               ClientCompanyProfile?         @relation(fields: [companyClientId], references: [id])
   // NOVOS CAMPOS DO PLANO MOVIDOS PARA CÁ
-  packageId          String? // ID do plano
-  package            Package?              @relation(fields: [packageId], references: [id])
+  packageId                   String? // ID do plano
+  package                     Package?                      @relation(fields: [packageId], references: [id])
   // Detalhes do Serviço
-  desiredPosition    DesiredPosition?      @relation(fields: [desiredPositionId], references: [id])
-  desiredPositionId  String?
-  description        String
-  serviceFrequency   ServiceFrequency?
+  desiredPosition             DesiredPosition?              @relation(fields: [desiredPositionId], references: [id])
+  desiredPositionId           String?
+  description                 String
+  serviceFrequency            ServiceFrequency?
   // Informações de Localização
-  location           Location              @relation(fields: [locationId], references: [id])
-  locationId         String
+  location                    Location                      @relation(fields: [locationId], references: [id])
+  locationId                  String
   //Termos Financeiros
-  agreedValue        Float
-  discountPercentage Float                 @default(0.0)
-  finalValue         Float
-  paymentTerms       String?               @db.Text
+  agreedValue                 Float
+  discountPercentage          Float                         @default(0.0)
+  finalValue                  Float
+  paymentTerms                String?                       @db.Text
   // Cronograma
-  startDate          DateTime
-  endDate            DateTime?
+  startDate                   DateTime
+  endDate                     DateTime?
   // Status e Autoria
-  status             ContractStatus        @default(DRAFT)
-  notes              String?               @db.Text
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-  contractPayment    ContractPayment[]
+  status                      ContractStatus                @default(DRAFT)
+  notes                       String?                       @db.Text
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @updatedAt
+  contractPayment             ContractPayment[]
   contractPackegeProfissional ContractPackegeProfissional[]
-  contractDoc ContractDoc[]
+  contractDoc                 ContractDoc[]
 }
 
 model contractSequence {
@@ -615,6 +626,8 @@ model Sector {
   companies ClientCompanyProfile[]
   createdAt DateTime               @default(now())
   updatedAt DateTime               @default(now()) @updatedAt
+
+  serviceRequest ServiceRequest[]
 }
 
 model User {
