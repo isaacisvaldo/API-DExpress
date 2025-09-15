@@ -12,8 +12,6 @@ import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
-import * as dns from 'dns';
-import { testDomains } from 'src/common/test-domain';
 
 
 @Injectable()

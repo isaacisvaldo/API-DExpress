@@ -24,6 +24,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { UpdateContractStatusDto } from './dto/UpdateContractStatusDto';
+import { CreateDocDto } from 'src/docs/dto/create-docs-dto';
 
 // Define o tipo do contrato com as relações para tipagem no controller
 const contractInclude = {
@@ -95,12 +96,35 @@ export class ContractController {
   async create(@Body() createContractDto: CreateContractDto): Promise<ContractWithRelations> {
     return this.contractService.create(createContractDto);
   }
+  @Post(':id/documents')
+  @ApiOperation({ summary: 'Cria um novo documento para um contrato' })
+  @ApiResponse({ status: 201, description: 'Documento criado com sucesso.' })
+createContractDoc(
+    @Param('id') id: string,
+    @Body() dto: CreateDocDto,
+  ) {
+    return this.contractService.createContractDoc(id, dto);
+  }
+
+
 
   @Get()
   @ApiOperation({ summary: 'Lista todos os contratos com paginação e filtros' })
   @ApiOkResponse({ description: 'Lista de contratos paginada e filtrada.' })
   async findAll(@Query() filter: FilterContractDto): Promise<PaginatedDto<ContractWithRelations>> {
     return this.contractService.findAll(filter);
+  }
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Atualiza o status de um Contrato de serviço.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Status do Contrato atualizado com sucesso.',
+  })
+UpdateStatus(
+    @Param('id') id: string,
+    @Body('status') status: ContractStatus,
+  ) {
+    return this.contractService.updateStatus(id, status);
   }
 
   @Get(':id')

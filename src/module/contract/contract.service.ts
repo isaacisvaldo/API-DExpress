@@ -10,6 +10,7 @@ import { FilterContractDto } from './dto/filter-contract.dto';
 import { Contract, ContractStatus, Prisma, UserType } from '@prisma/client';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { ContractNumberHelper } from 'src/helpers/contract-number.helper';
+import { CreateDocDto } from 'src/docs/dto/create-docs-dto';
 
 
 const contractInclude = {
@@ -17,6 +18,7 @@ const contractInclude = {
   individualClient: true,
   companyClient: true,
   package: true,
+
   desiredPosition: true,
   location: {
     include: {
@@ -39,7 +41,7 @@ type ContractWithRelations = Prisma.ContractGetPayload<{
 
 @Injectable()
 export class ContractService {
-  constructor(private readonly prisma: PrismaService,  private readonly contractNumberHelper: ContractNumberHelper) { }
+  constructor(private readonly prisma: PrismaService, private readonly contractNumberHelper: ContractNumberHelper) { }
 
   /**
    * Cria um novo contrato no banco de dados.
@@ -65,38 +67,38 @@ export class ContractService {
 
 
 
-// Estados que bloqueiam nova contratação
-const invalidStatuses: ContractStatus[] = [
-  ContractStatus.DRAFT,
-  ContractStatus.PENDING_SIGNATURE,
-  ContractStatus.EXPIRED,
-];
+    // Estados que bloqueiam nova contratação
+    const invalidStatuses: ContractStatus[] = [
+      ContractStatus.DRAFT,
+      ContractStatus.PENDING_SIGNATURE,
+      ContractStatus.EXPIRED,
+    ];
 
-let clientField: "individualClientId" | "companyClientId" | null = null;
-let clientId: string | null = null;
+    let clientField: "individualClientId" | "companyClientId" | null = null;
+    let clientId: string | null = null;
 
-if (contractData.clientType === UserType.INDIVIDUAL) {
-  clientField = "individualClientId";
-  clientId = individualClientId ?? null; 
-} else if (contractData.clientType === UserType.CORPORATE) {
-  clientField = "companyClientId";
-  clientId = companyClientId ?? null; 
-}
+    if (contractData.clientType === UserType.INDIVIDUAL) {
+      clientField = "individualClientId";
+      clientId = individualClientId ?? null;
+    } else if (contractData.clientType === UserType.CORPORATE) {
+      clientField = "companyClientId";
+      clientId = companyClientId ?? null;
+    }
 
-if (clientField && clientId) {
-  const existingContract = await this.prisma.contract.findFirst({
-    where: {
-      [clientField]: clientId,
-      status: { in: invalidStatuses },
-    },
-  });
+    if (clientField && clientId) {
+      const existingContract = await this.prisma.contract.findFirst({
+        where: {
+          [clientField]: clientId,
+          status: { in: invalidStatuses },
+        },
+      });
 
-  if (existingContract) {
-    throw new BadRequestException(
-      `Não é possível criar novo contrato. O cliente já possui um contrato no estado ${existingContract.status}.`
-    );
-  }
-}
+      if (existingContract) {
+        throw new BadRequestException(
+          `Não é possível criar novo contrato. O cliente já possui um contrato no estado ${existingContract.status}.`
+        );
+      }
+    }
 
 
 
@@ -114,7 +116,7 @@ if (clientField && clientId) {
         );
       }
     }
-        
+
 
     return this.prisma.$transaction(async (prisma) => {
       // 1. Valida se os profissionais existem
@@ -143,10 +145,10 @@ if (clientField && clientId) {
       });
 
       // 3. Montagem do contrato base
-     const contractNumber = await this.contractNumberHelper.generate();
-       
-        let contractDataToSave: any = {
-         contractNumber,
+      const contractNumber = await this.contractNumberHelper.generate();
+
+      let contractDataToSave: any = {
+        contractNumber,
         title: contractData.title ?? "Contract Title",
         clientType: contractData.clientType,
         packageId: packageId ?? null,
@@ -199,13 +201,13 @@ if (clientField && clientId) {
           data: contractPackageProfessionalData,
         });
       }
-   await this.marcarProfissionaisIndisponiveis(
-  prisma,
-  contractData.clientType,
-  professionalId,
-  professionalIds,
-);
-     
+      await this.marcarProfissionaisIndisponiveis(
+        prisma,
+        contractData.clientType,
+        professionalId,
+        professionalIds,
+      );
+
       const createdContract = await prisma.contract.findUnique({
         where: { id: newContract.id },
         include: contractInclude,
@@ -219,7 +221,6 @@ if (clientField && clientId) {
 
 
   }
-
 
   /**
    * Busca contratos com filtros e paginação.
@@ -253,7 +254,6 @@ if (clientField && clientId) {
         }
         : undefined,
     };
-
     const [contracts, total] = await this.prisma.$transaction([
       this.prisma.contract.findMany({
         skip,
@@ -285,7 +285,30 @@ if (clientField && clientId) {
   async findOne(id: string): Promise<ContractWithRelations> {
     const contract = await this.prisma.contract.findUnique({
       where: { id },
-      include: contractInclude,
+      include: {
+        professional: true,
+        individualClient: true,
+        companyClient: true,
+        package: true,
+        contractDoc: {
+          include: {
+            document: true
+          }
+
+        },
+        desiredPosition: true,
+        location: {
+          include: {
+            city: true,
+            district: true,
+          },
+        },
+        contractPackegeProfissional: {
+          include: {
+            professional: true,
+          },
+        },
+      },
     });
 
     if (!contract) {
@@ -295,11 +318,11 @@ if (clientField && clientId) {
     return contract;
   }
 
-    /**
-   * Atualiza o status de um contrato
-   * @param contractId ID do contrato
-   * @param newStatus Novo status (enum ContractStatus)
-   */
+  /**
+ * Atualiza o status de um contrato
+ * @param contractId ID do contrato
+ * @param newStatus Novo status (enum ContractStatus)
+ */
   async updateContractStatus(contractId: string, newStatus: ContractStatus) {
     // Verifica se o contrato existe
     const contract = await this.findOne(contractId);
@@ -408,37 +431,62 @@ if (clientField && clientId) {
     }
   }
 
-
-async marcarProfissionaisIndisponiveis(
-  prisma: Prisma.TransactionClient, 
-  clientType: UserType,
-  professionalId?: string,
-  professionalIds?: string[],
-) {
-  if (clientType === UserType.INDIVIDUAL && professionalId) {
-    await prisma.professional.update({
-      where: { id: professionalId },
-      data: { isAvailable: false },
+  async updateStatus(id: string, status: ContractStatus) {
+    return await this.prisma.contract.update({
+      where: { id },
+      data: { status },
     });
   }
 
-  if (clientType === UserType.CORPORATE && professionalIds && professionalIds.length > 0) {
-    await prisma.professional.updateMany({
-      where: { id: { in: professionalIds } },
-      data: { isAvailable: false },
+  async createContractDoc(contractId: string, doc: CreateDocDto) {
+    return this.prisma.$transaction(async (prisma) => {
+      const aux = await this.prisma.document.create({
+        data: {
+          name: doc.name,
+          description: doc.description || "",
+          url: doc.url,
+        }
+      })
+      await this.prisma.contractDoc.create({
+        data: {
+          contractId,
+          documentId: aux.id,
+        },
+
+
+      })
+
+      return aux!;
+    }, {
+      timeout: 30000,
     });
+
+
   }
-}
+
+
+  async marcarProfissionaisIndisponiveis(
+    prisma: Prisma.TransactionClient,
+    clientType: UserType,
+    professionalId?: string,
+    professionalIds?: string[],
+  ) {
+    if (clientType === UserType.INDIVIDUAL && professionalId) {
+      await prisma.professional.update({
+        where: { id: professionalId },
+        data: { isAvailable: false },
+      });
+    }
+
+    if (clientType === UserType.CORPORATE && professionalIds && professionalIds.length > 0) {
+      await prisma.professional.updateMany({
+        where: { id: { in: professionalIds } },
+        data: { isAvailable: false },
+      });
+    }
+  }
 
 
 }
-let lastSequence = 0; 
-async function generateContractNumber(): Promise<string> {
-  const year = new Date().getFullYear();
-  lastSequence++;
-  const sequence = String(lastSequence).padStart(5, "0");
-  const randomCode = Math.random().toString(36).substr(2, 2).toUpperCase();
 
-  return `DEXPRESS-${year}-${sequence}/${randomCode}`;
-}
 

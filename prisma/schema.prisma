@@ -48,22 +48,22 @@ enum JobApplicationStatus {
 }
 
 model JobApplication {
-  id                     String               @id @default(uuid())
-  locationId             String
-  fullName               String
-  identityNumber         String
-  phoneNumber            String
-  optionalPhoneNumber    String?
-  desiredPositionId      String
-  email                  String
-  birthDate              String
-  genderId               String
-  highestDegreeId        String
-  maritalStatusId        String?
-  experienceLevelId      String?
+  id                  String  @id @default(uuid())
+  locationId          String
+  fullName            String
+  identityNumber      String
+  phoneNumber         String
+  optionalPhoneNumber String?
+  desiredPositionId   String
+  email               String
+  birthDate           String
+  genderId            String
+  highestDegreeId     String
+  maritalStatusId     String?
+  experienceLevelId   String?
 
   hasChildren            Boolean
-  knownDiseases           Boolean  @default(false)
+  knownDiseases          Boolean              @default(false)
   availabilityDate       String
   ProfessionalExperience Experience[]
   desiredPosition        DesiredPosition      @relation(fields: [desiredPositionId], references: [id])
@@ -75,12 +75,12 @@ model JobApplication {
   experienceLevel        ExperienceLevel?     @relation(fields: [experienceLevelId], references: [id])
 
   // Relacionamentos Many-to-Many nativos
-  languages              Language[]
-  skills                 Skill[]
-  courses                Course[]
-  professional           Professional[]
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
+  languages    Language[]
+  skills       Skill[]
+  courses      Course[]
+  professional Professional[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 }
 
 model Professional {
@@ -100,7 +100,7 @@ model Professional {
   genderId               String
   birthDate              DateTime                @default(now())
   hasChildren            Boolean                 @default(false)
- knownDiseases           Boolean  @default(false)
+  knownDiseases          Boolean                 @default(false)
   expectedSalary         Int                     @default(0)
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
@@ -114,7 +114,6 @@ model Professional {
   location               Location                @relation(fields: [locationId], references: [id])
   experienceLevel        ExperienceLevel         @relation(fields: [experienceLevelId], references: [id])
   availability           Availability[]
-  Document               Document[]
   ProfessionalExperience Experience[]
   professionalCourses    ProfessionalCourses[]
   professionalLanguages  ProfessionalLanguages[]
@@ -127,15 +126,15 @@ model Professional {
   contract                    Contract[]
   contractPackegeProfissional ContractPackegeProfissional[]
 
-  ServiceRequest ServiceRequest[]
+  serviceRequest ServiceRequest[]
 }
 
 model GeneralAvailability {
-  id             String           @id @default(uuid())
-  name           String           @unique
-  label          String
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @default(now()) @updatedAt
+  id        String   @id @default(uuid())
+  name      String   @unique
+  label     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 model ExperienceLevel {
@@ -291,14 +290,32 @@ model Experience {
   Professional   Professional[]
 }
 
+model ContractDoc {
+  id         String   @id @default(uuid())
+  contractId String
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id])
+  contract   Contract @relation(fields: [contractId], references: [id])
+}
+
+model ContractModel {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  urlFile     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Document {
-  id             String       @id @default(uuid()) // ID único do documento
-  professional   Professional @relation(fields: [professionalId], references: [id])
-  professionalId String // ID do profissional vinculado
-  type           DocumentType // Tipo do documento (ex: BI, certificado, etc.)
-  url            String // URL do arquivo/documento
-  createdAt      DateTime     @default(now()) // Data de criação
-  updatedAt      DateTime     @updatedAt // Data da última atualização
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  url         String
+  createdAt   DateTime @default(now()) // Data de criação
+  updatedAt   DateTime @updatedAt // Data da última atualização
+
+  contractDoc ContractDoc[]
 }
 
 model Availability {
@@ -359,6 +376,7 @@ model District {
   ClientCompanyProfile ClientCompanyProfile[]
 
   @@unique([name, cityId])
+  serviceRequest ServiceRequest[]
 }
 
 enum StatusRequest {
@@ -368,6 +386,8 @@ enum StatusRequest {
   CONTRACT_GENERATED
   COMPLETED
   REJECTED
+  APPROVED
+  CANCELED
 }
 
 enum ServiceFrequency {
@@ -399,14 +419,14 @@ model ServiceRequest {
   // Request Details
   description      String // Descrição da solicitação
   serviceFrequency ServiceFrequency?
-  createdAt        DateTime         @default(now())
-  status           StatusRequest    @default(PENDING) // Estado da solicitação
+  createdAt        DateTime          @default(now())
+  status           StatusRequest     @default(PENDING) // Estado da solicitação
 
   // Fields for the Service (only one is populated)
   planId         String? // ID do plano (para empresas)
   professionalId String? // ID do profissional (para pessoas normais)
   professional   Professional? @relation(fields: [professionalId], references: [id])
-  package           Package?      @relation(fields: [planId], references: [id])
+  package        Package?      @relation(fields: [planId], references: [id])
 
   // Optional relations to client profiles (filled after registration)
   individualClientId String? // ID do cliente individual, após registo
@@ -414,6 +434,9 @@ model ServiceRequest {
 
   companyClientId String? // ID da empresa, após registo
   companyClient   ClientCompanyProfile? @relation(fields: [companyClientId], references: [id])
+  companySector   Sector? @relation(fields: [companySectorId], references: [id])
+  companyDistrict District? @relation(fields: [companyDistrictId], references: [id])
+
 }
 
 model ClientProfile {
@@ -428,7 +451,7 @@ model ClientProfile {
   updatedAt        DateTime         @updatedAt
   user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId           String           @unique
-  ServiceRequest   ServiceRequest[]
+  serviceRequest   ServiceRequest[]
 
   contract Contract[]
 }
@@ -454,7 +477,7 @@ model ClientCompanyProfile {
   sectorId        String
   sector          Sector   @relation(fields: [sectorId], references: [id])
 
-  ServiceRequest ServiceRequest[]
+  serviceRequest ServiceRequest[]
 
   contract Contract[]
 }
@@ -500,56 +523,56 @@ enum ContractStatus {
 }
 
 model Contract {
-  id                 String                @id @default(uuid())
-  contractNumber     String                @unique @default(uuid())
-  title              String?
+  id                          String                        @id @default(uuid())
+  contractNumber              String                        @unique @default(uuid())
+  title                       String?
   // Relacionamento com as Partes
-  professional       Professional?         @relation(fields: [professionalId], references: [id])
-  professionalId     String? // Agora é OPCIONAL
-  clientType         UserType
-  individualClientId String?
-  companyClientId    String?
-  individualClient   ClientProfile?        @relation(fields: [individualClientId], references: [id])
-  companyClient      ClientCompanyProfile? @relation(fields: [companyClientId], references: [id])
+  professional                Professional?                 @relation(fields: [professionalId], references: [id])
+  professionalId              String? // Agora é OPCIONAL
+  clientType                  UserType
+  individualClientId          String?
+  companyClientId             String?
+  individualClient            ClientProfile?                @relation(fields: [individualClientId], references: [id])
+  companyClient               ClientCompanyProfile?         @relation(fields: [companyClientId], references: [id])
   // NOVOS CAMPOS DO PLANO MOVIDOS PARA CÁ
-  packageId          String? // ID do plano
-  package            Package?              @relation(fields: [packageId], references: [id])
+  packageId                   String? // ID do plano
+  package                     Package?                      @relation(fields: [packageId], references: [id])
   // Detalhes do Serviço
-  desiredPosition    DesiredPosition?      @relation(fields: [desiredPositionId], references: [id])
-  desiredPositionId  String?
-  description        String
-  serviceFrequency   ServiceFrequency? 
+  desiredPosition             DesiredPosition?              @relation(fields: [desiredPositionId], references: [id])
+  desiredPositionId           String?
+  description                 String
+  serviceFrequency            ServiceFrequency?
   // Informações de Localização
-  location           Location              @relation(fields: [locationId], references: [id])
-  locationId         String
+  location                    Location                      @relation(fields: [locationId], references: [id])
+  locationId                  String
   //Termos Financeiros
-  agreedValue        Float
-  discountPercentage Float                 @default(0.0)
-  finalValue         Float
-  paymentTerms       String?               @db.Text
+  agreedValue                 Float
+  discountPercentage          Float                         @default(0.0)
+  finalValue                  Float
+  paymentTerms                String?                       @db.Text
   // Cronograma
-  startDate          DateTime
-  endDate            DateTime?
+  startDate                   DateTime
+  endDate                     DateTime?
   // Status e Autoria
-  status             ContractStatus        @default(DRAFT)
-  notes              String?               @db.Text
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-  contractPayment    ContractPayment[]
-
+  status                      ContractStatus                @default(DRAFT)
+  notes                       String?                       @db.Text
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @updatedAt
+  contractPayment             ContractPayment[]
   contractPackegeProfissional ContractPackegeProfissional[]
+  contractDoc                 ContractDoc[]
 }
+
 model contractSequence {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
 }
 
-
 model ContractPackegeProfissional {
   id             String       @id @default(uuid())
   professional   Professional @relation(fields: [professionalId], references: [id])
   professionalId String
-   contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contract       Contract     @relation(fields: [contractId], references: [id], onDelete: Cascade)
   contractId     String
   isActive       Boolean      @default(true)
 }
@@ -603,6 +626,8 @@ model Sector {
   companies ClientCompanyProfile[]
   createdAt DateTime               @default(now())
   updatedAt DateTime               @default(now()) @updatedAt
+
+  serviceRequest ServiceRequest[]
 }
 
 model User {
@@ -630,14 +655,14 @@ model AdminUser {
   birthDate            DateTime
   email                String                 @unique
   password             String
-  avatar               String?          @default("user.png")
+  avatar               String?                @default("user.png")
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   notificationSettings NotificationSettings[]
   securitySettings     SecuritySettings[]
   genderId             String?
   profile              Profile                @relation(fields: [profileId], references: [id])
-  profileId            String 
+  profileId            String
   address              String                 @default("---")
   isRoot               Boolean                @default(false)
 }
@@ -682,7 +707,7 @@ model NotificationSettings {
 }
 
 model NewsletterSubscriber {
-  id        String    @id @default(uuid())
+  id        String   @id @default(uuid())
   email     String   @unique
   createdAt DateTime @default(now())
 }

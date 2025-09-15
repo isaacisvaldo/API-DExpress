@@ -60,7 +60,7 @@ export class ProfessionalService {
         jobApplication: true,
         experienceLevel: true,
         availability: true,
-        Document: true,
+        
         ProfessionalExperience: true,
         professionalCourses: { include: { course: true } },
         professionalLanguages: { include: { language: true } },
@@ -115,7 +115,7 @@ export class ProfessionalService {
           maritalStatus: true,
           highestDegree: true,
           availability: true,
-          Document: true,
+          
           ProfessionalExperience: true,
           professionalCourses: { include: { course: true } },
           professionalLanguages: { include: { language: true } },
@@ -221,7 +221,7 @@ export class ProfessionalService {
         maritalStatus: true,
         highestDegree: true,
         availability: true,
-        Document: true,
+        
         ProfessionalExperience: true,
         professionalCourses: { include: { course: true } },
         professionalLanguages: { include: { language: true } },

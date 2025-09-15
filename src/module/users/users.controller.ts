@@ -36,7 +36,7 @@ export class UserController {
   })
   @ApiResponse({ status: 400, description: 'E-mail já cadastrado.' })
   create(@Body() createUserDto: CreateUserDto, @Req() req: any) {
-    const originDomain = req.headers['origin'];
+    const originDomain = req.headers['origin'] || req.headers['referer'] || req.headers['host'];
     return this.userService.create(createUserDto, originDomain);
   }
 
