@@ -13,7 +13,7 @@ class LocationDto {
   street: string;
 }
 export class CreateContractInRequestDto {
-  @IsString()
+    @IsString()
     @IsOptional()
   companyName: string;
 

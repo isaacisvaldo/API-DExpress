@@ -243,7 +243,7 @@ export class ServiceRequestService {
     const request = await this.prisma.serviceRequest.findUnique({
       where: { id },
       include: {
-        companySector:true,
+        companySector: true,
         package: true,
         professional: true,
 
@@ -482,7 +482,7 @@ export class ServiceRequestService {
       ...contractData
     } = createContractDto;
     console.log(createContractDto);
-    
+
     // Validação de consistência de dados
     if (contractData.clientType === UserType.INDIVIDUAL) {
       if (!professionalId) {
@@ -530,6 +530,19 @@ export class ServiceRequestService {
       });
 
       if (contractData.clientType === UserType.INDIVIDUAL) {
+        const verifyEmail = await this.prisma.user.findFirst({
+          where: {
+            email: contractData.email
+          }
+        })
+        if (verifyEmail) throw new BadRequestException("Email já cadastrado");
+        const verifyEmail2 = await this.prisma.clientProfile.findFirst({
+          where: {
+            email: contractData.email
+          }
+        })
+        if (verifyEmail2) throw new BadRequestException("Email já cadastrado");
+
 
         const tempPassword = randomBytes(4).toString('hex');
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
