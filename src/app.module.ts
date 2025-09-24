@@ -39,6 +39,7 @@ import { FileService } from './module/shared/upload/file.service';
 import { FileController } from './module/shared/upload/file.controller';
 import { ContractModule } from './module/contract/contract.module';
 import { NewsletterSubscriberModule } from './module/newsletter-subscriber/newsletter-subscriber.module';
+import { TemplateContractModule } from './module/contract/model-contract/template.module';
 
 @Module({
   imports: [
@@ -96,11 +97,12 @@ import { NewsletterSubscriberModule } from './module/newsletter-subscriber/newsl
     PermissionsModule,
     ProfilesModule,
     FrontendUrlModule,
-  
+
     PackageModule,
     ServiceRequestModule,
     ContractModule,
     NewsletterSubscriberModule,
+      TemplateContractModule,
   ],
   controllers: [AppController, EmailController,FileController],
   providers: [
