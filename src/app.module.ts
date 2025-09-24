@@ -57,6 +57,10 @@ import { TemplateContractModule } from './module/contract/model-contract/templat
             user: config.get<string>('MAIL_USER'),
             pass: config.get<string>('MAIL_PASS'),
           },
+          
+          options: {
+            connectionTimeout: 60000, // 30 segundos
+          }
         },
         defaults: {
           from: `"Suporte DExpress" <${config.get<string>('MAIL_USER')}>`,
@@ -102,7 +106,7 @@ import { TemplateContractModule } from './module/contract/model-contract/templat
     ServiceRequestModule,
     ContractModule,
     NewsletterSubscriberModule,
-      TemplateContractModule,
+    TemplateContractModule,
   ],
   controllers: [AppController, EmailController,FileController],
   providers: [
