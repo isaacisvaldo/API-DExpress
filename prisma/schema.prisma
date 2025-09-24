@@ -298,13 +298,14 @@ model ContractDoc {
   contract   Contract @relation(fields: [contractId], references: [id])
 }
 
-model ContractModel {
+model ContractTemplate {
   id          String   @id @default(uuid())
   title       String
   description String
   urlFile     String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
 }
 
 model Document {
