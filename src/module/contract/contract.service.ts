@@ -463,6 +463,14 @@ export class ContractService {
 
 
   }
+  async removeDoc( documentId: string) {
+    await this.prisma.document.delete({
+        where: {
+          id: documentId,
+        },
+      });
+  }
+
 
 
   async marcarProfissionaisIndisponiveis(

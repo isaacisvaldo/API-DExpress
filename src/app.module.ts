@@ -59,7 +59,7 @@ import { TemplateContractModule } from './module/contract/model-contract/templat
           },
           
           options: {
-            connectionTimeout: 60000, // 30 segundos
+            connectionTimeout: 60000, 
           }
         },
         defaults: {

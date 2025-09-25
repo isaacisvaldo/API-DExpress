@@ -294,8 +294,8 @@ model ContractDoc {
   id         String   @id @default(uuid())
   contractId String
   documentId String
-  document   Document @relation(fields: [documentId], references: [id])
-  contract   Contract @relation(fields: [contractId], references: [id])
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 }
 
 model ContractTemplate {
