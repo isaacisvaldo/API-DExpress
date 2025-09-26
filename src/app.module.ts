@@ -40,6 +40,7 @@ import { FileController } from './module/shared/upload/file.controller';
 import { ContractModule } from './module/contract/contract.module';
 import { NewsletterSubscriberModule } from './module/newsletter-subscriber/newsletter-subscriber.module';
 import { TemplateContractModule } from './module/contract/model-contract/template.module';
+import { ScheduleModule } from './module/shared/schedule/schedule.module';
 
 @Module({
   imports: [
@@ -73,7 +74,7 @@ import { TemplateContractModule } from './module/contract/model-contract/templat
         limit: 10,
       },
     ]),
-
+  ScheduleModule,
     AuthModule,
     ProfessionalModule,
     CityModule,
@@ -86,7 +87,6 @@ import { TemplateContractModule } from './module/contract/model-contract/templat
     UsersModule,
     AdminAuthModule,
     PrismaModule,
-   
     DesiredPositionModule,
     GenderModule,
     MaritalStatusModule,
@@ -101,7 +101,6 @@ import { TemplateContractModule } from './module/contract/model-contract/templat
     PermissionsModule,
     ProfilesModule,
     FrontendUrlModule,
-
     PackageModule,
     ServiceRequestModule,
     ContractModule,

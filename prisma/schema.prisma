@@ -504,7 +504,7 @@ model Package {
 // Tabela para os Métodos de Pagamento
 model PaymentMethod {
   id        String    @id @default(uuid())
-  name      String    @unique // Ex: "TransferenciaBancaria", "CartaoCredito", etc.
+  name      String    @unique 
   label     String
   isActive  Boolean   @default(true)
   createdAt DateTime  @default(now())
