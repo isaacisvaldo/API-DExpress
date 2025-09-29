@@ -81,14 +81,15 @@ export class AdminUserController {
       @Body() updateImageDto: UpdateImageDto) {
     return this.service.updateImageUrl(id,updateImageDto.imageUrl);
   }
-    @Delete('users/:id')
+   @Delete('users/:id')
   @UseGuards(PermissionsGuard)
   @RequiredPermissions(PermissionType.UsersDelete)
   @ApiOperation({ summary: 'Deleta um utilizador administrador' })
   @ApiOkResponse({ description: 'Utilizador deletado com sucesso' })
   @ApiResponse({ status: 404, description: 'Utilizador não encontrado' })
-  async remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  async remove(@Param('id') id: string,@Req() req: any) {
+     const creatorId = req.user.sub || req.user.id;
+    return this.service.remove(id,creatorId);
   }
 
    

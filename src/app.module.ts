@@ -41,6 +41,7 @@ import { ContractModule } from './module/contract/contract.module';
 import { NewsletterSubscriberModule } from './module/newsletter-subscriber/newsletter-subscriber.module';
 import { TemplateContractModule } from './module/contract/model-contract/template.module';
 import { ScheduleModule } from './module/shared/schedule/schedule.module';
+import { AuditLogModule } from './module/shared/auditLog/auditLog.module';
 
 @Module({
   imports: [
@@ -74,7 +75,8 @@ import { ScheduleModule } from './module/shared/schedule/schedule.module';
         limit: 10,
       },
     ]),
-  ScheduleModule,
+ 
+    ScheduleModule,
     AuthModule,
     ProfessionalModule,
     CityModule,
@@ -106,6 +108,7 @@ import { ScheduleModule } from './module/shared/schedule/schedule.module';
     ContractModule,
     NewsletterSubscriberModule,
     TemplateContractModule,
+       AuditLogModule, 
   ],
   controllers: [AppController, EmailController,FileController],
   providers: [

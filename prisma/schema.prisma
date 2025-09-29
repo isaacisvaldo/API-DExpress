@@ -644,6 +644,8 @@ model User {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   clientProfile ClientProfile[]
+
+  notification Notification[]
 }
 
 model AdminUser {
@@ -666,6 +668,9 @@ model AdminUser {
   profileId            String
   address              String                 @default("---")
   isRoot               Boolean                @default(false)
+
+  auditLog AuditLog[]
+
 }
 
 // Novo modelo Profile para gerir perfis de utilizador.
@@ -696,6 +701,22 @@ model SecuritySettings {
   lastPasswordChange DateTime?
   adminUser          AdminUser @relation(fields: [userId], references: [id])
 }
+model Notification {
+  id          String     @id @default(uuid())
+  user        User  @relation(fields: [userId], references: [id])
+  userId      String
+
+  type        String     // Ex: "CONTRACT_EXPIRED", "NEW_MESSAGE", "SYSTEM_ALERT"
+  title       String     // Título visível da notificação
+  message     String     // Mensagem curta ou corpo principal
+  data        Json?      // Dados extras (ex: ID do contrato, link, etc.)
+
+  status      String     @default("UNREAD") // UNREAD, READ, ARCHIVED
+  channel     String     @default("IN_APP") // IN_APP, EMAIL, PUSH, SMS
+  createdAt   DateTime   @default(now())
+  readAt      DateTime?  // Quando o usuário leu
+}
+
 
 model NotificationSettings {
   id        String    @id @default(uuid())
@@ -712,3 +733,24 @@ model NewsletterSubscriber {
   email     String   @unique
   createdAt DateTime @default(now())
 }
+model AuditLog {
+  id            String     @id @default(uuid())
+  user          AdminUser? @relation(fields: [userId], references: [id])
+  userId        String?
+  action        String     // Código ou nome da ação -> "CREATE_CONTRACT", "LOGIN", etc.
+  entity        String     // Nome da entidade afetada -> "Contract", "Profile", "User"
+  entityId      String?    // ID do registro afetado (se aplicável)
+  description   String?    // Texto livre explicativo
+  ipAddress     String?    // IP da origem da requisição
+  userAgent     String?    // Informações do navegador/cliente
+  requestMethod String?    // GET, POST, PUT, DELETE
+  requestUrl    String?    // Endpoint que foi acessado
+  requestBody   Json?      // Payload enviado (se aplicável)
+  previousData  Json?      // Estado antes da alteração (se aplicável)
+  newData       Json?      // Estado depois da alteração (se aplicável)
+  status        String     @default("SUCCESS") // SUCCESS, FAILURE, ERROR
+  source        String?    // Origem: "SYSTEM", "USER", "CRON_JOB", "API"
+  read          Boolean    @default(false) // Se o log já foi revisado
+  createdAt     DateTime   @default(now())
+}
+
