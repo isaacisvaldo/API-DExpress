@@ -10,7 +10,6 @@ import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
 import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 import { ServiceRequest, Prisma, UserType, StatusRequest } from '@prisma/client';
 import { MailerService } from '@nestjs-modules/mailer';
-
 import { FilterServiceRequestsDto } from './dto/filter-service-requests.dto';
 import { CreateContractInRequestDto } from './dto/create-contract-inRequestService';
 import { ContractNumberHelper } from 'src/helpers/contract-number.helper';
@@ -44,7 +43,6 @@ export class ServiceRequestService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly contractNumberHelper: ContractNumberHelper,
-
     private readonly mailerService: MailerService,
      private readonly auditLogService: AuditLogService,
   ) { }
