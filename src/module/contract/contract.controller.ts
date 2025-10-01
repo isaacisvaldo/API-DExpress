@@ -53,19 +53,19 @@ type ContractWithRelations = Prisma.ContractGetPayload<{
 @ApiTags('Contracts')
 @Controller('contracts')
 export class ContractController {
-  constructor(private readonly contractService: ContractService) {}
-   private readonly statusLabels: Record<ContractStatus, string> = {
-   [ContractStatus.DRAFT]: "Rascunho",
-   [ContractStatus.PENDING_SIGNATURE]: "Pendente de assinatura",
-   [ContractStatus.EXPIRED]: "Expirado",
-   [ContractStatus.ACTIVE]: "Ativo",
-   [ContractStatus.TERMINATED]: "Terminado",
-   [ContractStatus.CANCELED]: "Cancelado",
-   [ContractStatus.PAUSED]: "Pausado",
-   [ContractStatus.COMPLETED]: "Completo",
-  
-  
- };
+  constructor(private readonly contractService: ContractService) { }
+  private readonly statusLabels: Record<ContractStatus, string> = {
+    [ContractStatus.DRAFT]: "Rascunho",
+    [ContractStatus.PENDING_SIGNATURE]: "Pendente de assinatura",
+    [ContractStatus.EXPIRED]: "Expirado",
+    [ContractStatus.ACTIVE]: "Ativo",
+    [ContractStatus.TERMINATED]: "Terminado",
+    [ContractStatus.CANCELED]: "Cancelado",
+    [ContractStatus.PAUSED]: "Pausado",
+    [ContractStatus.COMPLETED]: "Completo",
+
+
+  };
 
   @Get("statuses")
   @ApiOperation({ summary: "Lista todos os status possíveis de contrato com rótulos" })
@@ -99,11 +99,25 @@ export class ContractController {
   @Post(':id/documents')
   @ApiOperation({ summary: 'Cria um novo documento para um contrato' })
   @ApiResponse({ status: 201, description: 'Documento criado com sucesso.' })
-createContractDoc(
+  createContractDoc(
     @Param('id') id: string,
     @Body() dto: CreateDocDto,
   ) {
     return this.contractService.createContractDoc(id, dto);
+  }
+
+
+
+
+  @Delete('documents/:documentId')
+  @ApiOperation({ summary: 'Remove um documento de um contrato' })
+  @ApiResponse({ status: 200, description: 'Documento removido com sucesso.' })
+  async DeleteDocContract(
+  
+    @Param('documentId') documentId: string,
+  ) {
+    return this.contractService.removeDoc(documentId);
+
   }
 
 
@@ -120,7 +134,7 @@ createContractDoc(
     status: 200,
     description: 'Status do Contrato atualizado com sucesso.',
   })
-UpdateStatus(
+  UpdateStatus(
     @Param('id') id: string,
     @Body('status') status: ContractStatus,
   ) {
@@ -142,7 +156,7 @@ UpdateStatus(
     type: UpdateContractStatusDto,
     examples: {
       exemplo: {
-        value: { status: "EXPIRED" }, 
+        value: { status: "EXPIRED" },
       },
     },
   })
@@ -154,7 +168,7 @@ UpdateStatus(
     return this.contractService.updateContractStatus(id, body.status);
   }
 
-  
+
   @Put(':id')
   @ApiOperation({ summary: 'Atualiza um contrato' })
   @ApiParam({ name: 'id', description: 'ID do contrato', type: String })

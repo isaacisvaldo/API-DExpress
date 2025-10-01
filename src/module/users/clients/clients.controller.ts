@@ -40,7 +40,7 @@ export class ClientProfileController {
 
   @Post()
   @ApiOperation({
-    summary: 'Cria um novo perfil de cliente para o usuário autenticado.',
+    summary: 'Cria um novo perfil de cliente.',
   })
   @ApiResponse({
     status: 201,
@@ -53,33 +53,13 @@ export class ClientProfileController {
   })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado.' })
   create(
-    @Request() req: any,
+    @Request() 
     @Body() createDto: CreateClientProfileDto,
   ): Promise<ClientProfileModel> {
-    const userId = req.user.id; 
-    return this.profileService.create(userId, createDto);
+  
+    return this.profileService.create(createDto);
   }
-    @Post(":userId")
-  @ApiOperation({
-    summary: 'Cria um novo perfil de cliente pelo backOfice.',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Perfil de cliente criado com sucesso.',
-    
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Usuário já possui perfil ou não é do tipo INDIVIDUAL.',
-  })
-  @ApiResponse({ status: 404, description: 'Usuário não encontrado.' })
-  createInternal(
-   @Param('userId') userId: string,
-    @Body() createDto: CreateClientProfileDto,
-  ): Promise<ClientProfileModel> {
-   
-    return this.profileService.create(userId, createDto);
-  }
+
 
   @Get(':id')
   @ApiOperation({ summary: 'Busca um perfil de cliente pelo ID.' })

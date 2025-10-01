@@ -9,10 +9,11 @@ import { PaginatedDto } from 'src/common/pagination/paginated.dto';
 
 import { UpdateAdminUserDto } from './dto/update-admin.dto';
 import { CreateAdminUserDto } from './dto/create-admin-user.dto.ts';
+import { AuditLogService } from 'src/module/shared/auditLog/auditLog.service';
 
 @Injectable()
 export class AdminUserService {
-  constructor(private readonly prisma: PrismaService, private readonly mailerService: MailerService) {}
+  constructor(private readonly prisma: PrismaService, private readonly mailerService: MailerService, private readonly auditLogService: AuditLogService,) {}
 
   /**
    * Cria um novo utilizador administrador.
@@ -67,6 +68,17 @@ export class AdminUserService {
 
     // 6. Envia o email de boas-vindas
     await this.sendAdminWelcomeEmail(newAdmin.email, password,originDomain,profile.label);
+      // 🔹 Log de auditoria
+    await this.auditLogService.createLog({
+      action: 'CREATE_ADMIN',
+      entity: 'AdminUser',
+      entityId: newAdmin.id,
+      description: `Administrador ${newAdmin.name} criado por ${creator.name}`,
+      newData: newAdmin,
+      status: 'SUCCESS',
+      source: 'USER',
+      userId: creatorId,
+    });
     return { message: 'Administrador criado com sucesso', id: newAdmin.id };
   }
   
@@ -175,76 +187,93 @@ export class AdminUserService {
    * @returns O objeto do utilizador atualizado.
    */
   async update(id: string, updateAdminUserDto: UpdateAdminUserDto): Promise<AdminUser> {
+    const oldAdmin = await this.prisma.adminUser.findUnique({ where: { id } });
+    if (!oldAdmin) throw new NotFoundException(`Utilizador com o ID "${id}" não encontrado`);
+
     const updateData: Prisma.AdminUserUpdateInput = {};
-
-    // 1. Processa todos os campos do DTO, exceto profileId
     for (const [key, value] of Object.entries(updateAdminUserDto)) {
-        if (value !== undefined && key !== 'profileId') {
-            updateData[key as keyof Prisma.AdminUserUpdateInput] = value;
-        }
+      if (value !== undefined && key !== 'profileId') {
+        updateData[key as keyof Prisma.AdminUserUpdateInput] = value;
+      }
     }
 
-    // 2. Se o profileId estiver presente no DTO, trate-o separadamente
     if (updateAdminUserDto.profileId) {
-        // Verifica se o perfil existe
-        const profile = await this.prisma.profile.findUnique({ where: { id: updateAdminUserDto.profileId } });
-        if (!profile) {
-            throw new NotFoundException(`Perfil com o ID "${updateAdminUserDto.profileId}" não encontrado.`);
-        }
-        // ✅ Corrigido: Conecta o perfil usando a sintaxe de relação
-        updateData.profile = { connect: { id: updateAdminUserDto.profileId } };
+      const profile = await this.prisma.profile.findUnique({ where: { id: updateAdminUserDto.profileId } });
+      if (!profile) throw new NotFoundException(`Perfil com o ID "${updateAdminUserDto.profileId}" não encontrado.`);
+      updateData.profile = { connect: { id: updateAdminUserDto.profileId } };
     }
-    
-    try {
-      return await this.prisma.adminUser.update({
-        where: { id },
-        data: updateData,
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new NotFoundException(`Utilizador com o ID "${id}" não encontrado`);
-      }
-      throw error;
-    }
+
+    const updated = await this.prisma.adminUser.update({ where: { id }, data: updateData });
+
+    // 🔹 Log de auditoria
+    await this.auditLogService.createLog({
+      action: 'UPDATE_ADMIN',
+      entity: 'AdminUser',
+      entityId: id,
+      description: `Administrador ${updated.name} atualizado`,
+      previousData: oldAdmin,
+      newData: updated,
+      status: 'SUCCESS',
+      source: 'USER',
+      userId: updated.id,
+    });
+
+    return updated;
   }
+
 
   /**
    * Remove um utilizador administrador.
    * @param id ID do utilizador.
    * @returns O objeto do utilizador removido.
    */
-  async remove(id: string): Promise<AdminUser> {
-    try {
+  async remove(id: string,deletor:string): Promise<AdminUser> {
+    const adminDelete = await this.prisma.adminUser.findUnique({ where: { id } });
+    if (!adminDelete) throw new NotFoundException(`Utilizador com o ID "${id}" não encontrado`);
+    if (adminDelete?.isRoot) throw new NotFoundException(`Utilizador "${adminDelete?.name}" não pode ser deletado`);
 
-       const adminDelete=  await this.prisma.adminUser.findUnique({
-        where:{
-          id
-        }
-        
-       })
-       if(adminDelete?.isRoot) throw new NotFoundException(`Utilizador "${adminDelete?.name}" Nãoo pode ser Deletado`);
-      return await this.prisma.adminUser.delete({
-        where: { id },
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new NotFoundException(`Utilizador com o ID "${id}" não encontrado`);
-      }
-      throw error;
-    }
+    const deleted = await this.prisma.adminUser.delete({ where: { id } });
+
+    // 🔹 Log de auditoria
+    await this.auditLogService.createLog({
+      action: 'DELETE_ADMIN',
+      entity: 'AdminUser',
+      entityId: id,
+      description: `Administrador ${deleted.name} foi removido`,
+      previousData: adminDelete,
+      status: 'SUCCESS',
+      source: 'USER',
+      userId: deletor,
+     
+    });
+
+    return deleted;
   }
 
-     async updateImageUrl(id: string, avatar: string): Promise<AdminUser> {
-      const professional = await this.prisma.adminUser.findUnique({ where: { id } });
-      if (!professional) {
-        throw new NotFoundException(`User com ID "${id}" não encontrado.`);
-      }
-  
-      return this.prisma.adminUser.update({
-        where: { id },
-        data: { avatar }, 
-      });
-    }
+  async updateImageUrl(id: string, avatar: string): Promise<AdminUser> {
+    const admin = await this.prisma.adminUser.findUnique({ where: { id } });
+    if (!admin) throw new NotFoundException(`User com ID "${id}" não encontrado.`);
+
+    const updated = await this.prisma.adminUser.update({
+      where: { id },
+      data: { avatar },
+    });
+
+    // 🔹 Log de auditoria
+    await this.auditLogService.createLog({
+      action: 'UPDATE_AVATAR',
+      entity: 'AdminUser',
+      entityId: id,
+      description: `Imagem de perfil do administrador ${updated.name} atualizada`,
+      previousData: { avatar: admin.avatar },
+      newData: { avatar: updated.avatar },
+      status: 'SUCCESS',
+      source: 'USER',
+      userId: id,
+    });
+
+    return updated;
+  }
 
   /**
    * Envia um email de boas-vindas com credenciais temporárias para o administrador.

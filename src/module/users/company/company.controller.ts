@@ -10,6 +10,7 @@ import {
   Delete,
   Request,
   Query,
+  Put,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CreateCompanyProfileDto } from './dto/create-company-profile.dto';
@@ -68,6 +69,21 @@ export class ClientCompanyProfileController {
 
     return this.profileService.create( createDto);
   }
+  @Put(':id')
+  @ApiOperation({ summary: 'Atualiza um perfil de empresa pelo ID.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil atualizado com sucesso.',
+   
+  })
+  @ApiResponse({ status: 404, description: 'Perfil não encontrado.' })
+  update(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateCompanyProfileDto,
+  ): Promise<ClientCompanyProfile> {
+    return this.profileService.update(id, updateDto);
+  }
+
 
   @Get(':id')
   @ApiOperation({ summary: 'Busca um perfil de empresa pelo ID.' })
@@ -92,21 +108,7 @@ export class ClientCompanyProfileController {
   })
 
 
-  @Patch(':id')
-  @ApiOperation({ summary: 'Atualiza um perfil de empresa pelo ID.' })
-  @ApiResponse({
-    status: 200,
-    description: 'Perfil atualizado com sucesso.',
-   
-  })
-  @ApiResponse({ status: 404, description: 'Perfil não encontrado.' })
-  update(
-    @Param('id') id: string,
-    @Body() updateDto: UpdateCompanyProfileDto,
-  ): Promise<ClientCompanyProfile> {
-    return this.profileService.update(id, updateDto);
-  }
-
+  
   @Delete(':id')
   @ApiOperation({ summary: 'Remove um perfil de empresa pelo ID.' })
   @ApiResponse({
