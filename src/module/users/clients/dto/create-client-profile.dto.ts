@@ -11,13 +11,19 @@ import {
 
 export class CreateClientProfileDto {
   @ApiProperty({
-    description: 'O nome completo do cliente.',
-    example: 'João da Silva',
+    description: 'O nome Primeiro Nome do Cliente.',
+    example: 'João',
   })
-  @IsNotEmpty({ message: 'O nome completo é obrigatório.' })
-  @IsString({ message: 'O nome completo deve ser uma string.' })
-  fullName: string;
-
+  @IsNotEmpty({ message: 'O Primeiro Nome é Obrigatorio.' })
+  @IsString({ message: 'O Primeiro Nome deve ser uma string.' })
+  firstName: string;
+@IsNotEmpty({ message: 'O Ultimo Nome é Obrigatorio.' })  
+@IsString({ message: 'O Ultimo Nome deve ser uma string.' })
+  @ApiProperty({
+    description: 'O sobrenome do cliente.',
+    example: 'Silva',
+  })
+  lastName: string;
   @ApiProperty({
     description: 'O endereço de e-mail do cliente. Deve ser único.',
     example: 'joao.silva@example.com',
@@ -61,4 +67,13 @@ export class CreateClientProfileDto {
   @IsNotEmpty({ message: 'O endereço é obrigatório.' })
   @IsString({ message: 'O endereço deve ser uma string.' })
   address: string;
+
+
+  @ApiProperty({
+    description: 'A senha temporária do cliente para o primeiro acesso.',
+    example: 'Senha@1234',
+  })
+  @IsOptional()
+  @IsString({ message: 'A senha deve ser uma string.' })
+  password?: string;
 }

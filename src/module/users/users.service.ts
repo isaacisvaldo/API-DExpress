@@ -36,7 +36,7 @@ export class UserService {
     // 3. Verificação de usuário existente
     const existingUser = await this.findByEmail(email);
     if (existingUser) {
-      throw new BadRequestException('E-mail já cadastrado.');
+      throw new BadRequestException('E-mail já cadastrado No Portal :::.');
     }
 
     // Restante da sua lógica
