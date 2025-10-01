@@ -40,6 +40,8 @@ import { FileController } from './module/shared/upload/file.controller';
 import { ContractModule } from './module/contract/contract.module';
 import { NewsletterSubscriberModule } from './module/newsletter-subscriber/newsletter-subscriber.module';
 import { TemplateContractModule } from './module/contract/model-contract/template.module';
+import { ScheduleModule } from './module/shared/schedule/schedule.module';
+import { AuditLogModule } from './module/shared/auditLog/auditLog.module';
 
 @Module({
   imports: [
@@ -59,7 +61,7 @@ import { TemplateContractModule } from './module/contract/model-contract/templat
           },
           
           options: {
-            connectionTimeout: 60000, // 30 segundos
+            connectionTimeout: 60000, 
           }
         },
         defaults: {
@@ -73,7 +75,8 @@ import { TemplateContractModule } from './module/contract/model-contract/templat
         limit: 10,
       },
     ]),
-
+ 
+    ScheduleModule,
     AuthModule,
     ProfessionalModule,
     CityModule,
@@ -86,7 +89,6 @@ import { TemplateContractModule } from './module/contract/model-contract/templat
     UsersModule,
     AdminAuthModule,
     PrismaModule,
-   
     DesiredPositionModule,
     GenderModule,
     MaritalStatusModule,
@@ -101,12 +103,12 @@ import { TemplateContractModule } from './module/contract/model-contract/templat
     PermissionsModule,
     ProfilesModule,
     FrontendUrlModule,
-
     PackageModule,
     ServiceRequestModule,
     ContractModule,
     NewsletterSubscriberModule,
     TemplateContractModule,
+       AuditLogModule, 
   ],
   controllers: [AppController, EmailController,FileController],
   providers: [

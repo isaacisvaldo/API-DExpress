@@ -71,6 +71,7 @@ export class ClientCompanyProfileService {
     return this.prisma.clientCompanyProfile.findMany({
       where,
       include: {
+        district: true,
 
         sector: true,
       },
@@ -102,6 +103,7 @@ export class ClientCompanyProfileService {
       where: { id },
       include: {
 
+        district: true,
         sector: true,
       },
     });

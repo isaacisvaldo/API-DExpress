@@ -32,4 +32,15 @@ export class DashboardController {
       data: data,
     };
   }
+
+
+  @Get('clients-by-segment')
+  async getClientsBySegment(): Promise<any> {
+    const data = await this.dashboardService.getClientsSegmentationData();
+
+    return {
+      success: true,
+      data: data,
+    };
+  }
 }
