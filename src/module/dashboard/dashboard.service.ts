@@ -2,7 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { format, subDays } from 'date-fns';
 import { StatusRequest, ContractStatus } from '@prisma/client';
+ export interface SegmentData {
+  segment: string;
+  count: number;
+  percentage: number;
+}
+
 @Injectable()
+
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) { }
   async getDashboardSummary() {
@@ -166,4 +173,44 @@ export class DashboardService {
     return formattedData;
   }
 
+ async getClientsSegmentationData(): Promise<SegmentData[]> {
+    const clientProfiles: any[] = await this.prisma.clientCompanyProfile.findMany({
+      select: {
+        contract: {
+          select: {
+            package: {
+              select: {
+                name: true, 
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const packageCount: { [key: string]: number } = {};
+    const totalClients = clientProfiles.length;
+      clientProfiles.forEach(profile => {
+      const firstContract = profile.contract ? profile.contract[0] : null;
+      const packageName = firstContract?.package?.name;
+
+      if (packageName) {
+        packageCount[packageName] = (packageCount[packageName] || 0) + 1;
+      }
+    });
+    const formattedData: SegmentData[] = Object.keys(packageCount).map(packageName => {
+      const count = packageCount[packageName];
+      const percentage = totalClients > 0 
+        ? parseFloat(((count / totalClients) * 100).toFixed(2))
+        : 0;
+
+      return {
+        segment: packageName, 
+        count: count,
+        percentage: percentage,
+      };
+    });
+
+    return formattedData.filter(data => data.count > 0);
+  }
 }
