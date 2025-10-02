@@ -58,6 +58,7 @@ async function main() {
 
    
   const urls = [
+    "https://dexpress.ao",
     'http://localhost:4200', 
     "http://localhost:5173",
     "https://back-office-d-express.vercel.app",
